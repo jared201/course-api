@@ -1,0 +1,76 @@
+# Test your FastAPI endpoints
+
+# Root endpoint
+GET http://127.0.0.1:8000/
+Accept: application/json
+
+###
+
+# Create a new user
+POST http://127.0.0.1:8000/users/
+Content-Type: application/json
+
+{
+  "username": "johndoe",
+  "email": "john.doe@example.com",
+  "full_name": "John Doe",
+  "password": "securepassword",
+  "role": "student"
+}
+
+###
+
+# Create an instructor user
+POST http://127.0.0.1:8000/users/
+Content-Type: application/json
+
+{
+  "username": "janedoe",
+  "email": "jane.doe@example.com",
+  "full_name": "Jane Doe",
+  "password": "securepassword",
+  "role": "instructor"
+}
+
+###
+
+# Login to get access token
+POST http://127.0.0.1:8000/token
+Content-Type: application/x-www-form-urlencoded
+
+username=johndoe&password=securepassword
+
+###
+
+# Get current user profile
+GET http://127.0.0.1:8000/users/me
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+# Create a new course (requires instructor role)
+POST http://127.0.0.1:8000/courses/
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "title": "Introduction to Python Programming",
+  "description": "Learn the basics of Python programming language",
+  "level": "beginner",
+  "price": 49.99,
+  "tags": ["programming", "python", "beginner"]
+}
+
+###
+
+# List all published courses
+GET http://127.0.0.1:8000/courses/
+Accept: application/json
+
+###
+
+# Get a specific course
+GET http://127.0.0.1:8000/courses/1
+Accept: application/json
+
+###

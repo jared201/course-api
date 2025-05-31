@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Available Courses{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Available Courses</h1>
+        
+        <div class="row">
+            {% for course in courses %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ course.title }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ course.level }}</h6>
+                            <p class="card-text">{{ course.description }}</p>
+                            {% if course.tags %}
+                                <div class="mb-2">
+                                    {% for tag in course.tags %}
+                                        <span class="badge bg-secondary">{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="card-text">
+                                <strong>Price:</strong> 
+                                {% if course.price == 0 %}
+                                    Free
+                                {% else %}
+                                    ${{ course.price }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="/courses/{{ course.id }}" class="btn btn-primary">View Course</a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        No courses available at the moment. Please check back later.
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

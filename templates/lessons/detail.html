@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.title }} | {{ module.title }} | {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/courses">Courses</a></li>
+                <li class="breadcrumb-item"><a href="/courses/{{ course.id }}">{{ course.title }}</a></li>
+                <li class="breadcrumb-item"><a href="/courses/{{ course.id }}/modules/{{ module.id }}">{{ module.title }}</a></li>
+                <li class="breadcrumb-item active">{{ lesson.title }}</li>
+            </ol>
+        </nav>
+        
+        <h1 class="mb-3">{{ lesson.title }}</h1>
+        
+        <div class="mb-4">
+            <span class="badge bg-primary">{{ lesson.content_type }}</span>
+            {% if lesson.id in completed_lessons %}
+                <span class="badge bg-success">Completed</span>
+            {% endif %}
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                {% if lesson.content_type == 'VIDEO' %}
+                    <div class="ratio ratio-16x9 mb-3">
+                        <iframe src="{{ lesson.content_url }}" title="{{ lesson.title }}" allowfullscreen></iframe>
+                    </div>
+                {% elif lesson.content_type == 'DOCUMENT' %}
+                    <div class="embed-responsive embed-responsive-1by1 mb-3">
+                        <iframe class="embed-responsive-item" src="{{ lesson.content_url }}"></iframe>
+                    </div>
+                {% endif %}
+                
+                <div class="lesson-content">
+                    {{ lesson.content | safe }}
+                </div>
+            </div>
+        </div>
+        
+        {% if not lesson.id in completed_lessons %}
+            <form action="/courses/{{ course.id }}/modules/{{ module.id }}/lessons/{{ lesson.id }}/complete" method="post" class="mb-4">
+                <button type="submit" class="btn btn-success">Mark as Completed</button>
+            </form>
+        {% endif %}
+        
+        <div class="d-flex justify-content-between">
+            {% if prev_lesson %}
+                <a href="/courses/{{ course.id }}/modules/{{ module.id }}/lessons/{{ prev_lesson.id }}" class="btn btn-outline-primary">
+                    &larr; Previous Lesson
+                </a>
+            {% else %}
+                {% if prev_module %}
+                    <a href="/courses/{{ course.id }}/modules/{{ prev_module.id }}" class="btn btn-outline-primary">
+                        &larr; Previous Module
+                    </a>
+                {% else %}
+                    <a href="/courses/{{ course.id }}" class="btn btn-outline-secondary">
+                        &larr; Back to Course
+                    </a>
+                {% endif %}
+            {% endif %}
+            
+            {% if next_lesson %}
+                <a href="/courses/{{ course.id }}/modules/{{ module.id }}/lessons/{{ next_lesson.id }}" class="btn btn-outline-primary">
+                    Next Lesson &rarr;
+                </a>
+            {% else %}
+                {% if next_module %}
+                    <a href="/courses/{{ course.id }}/modules/{{ next_module.id }}" class="btn btn-outline-primary">
+                        Next Module &rarr;
+                    </a>
+                {% else %}
+                    <a href="/courses/{{ course.id }}/complete" class="btn btn-success">
+                        Complete Course
+                    </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
