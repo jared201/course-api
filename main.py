@@ -154,12 +154,152 @@ async def get_course(course_id: int):
 @app.get("/")
 async def root(request: Request):
     """Root endpoint with API information."""
+    # Sample data for featured courses
+    featured_courses = [
+        {
+            "id": 1,
+            "title": "Python for Beginners",
+            "description": "Learn the basics of Python programming language. This course covers variables, data types, control flow, functions, and more.",
+            "instructor_id": 1,
+            "level": CourseLevel.BEGINNER,
+            "price": 49.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Python", "Programming", "Beginners"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
+        },
+        {
+            "id": 2,
+            "title": "Web Development with JavaScript",
+            "description": "Master JavaScript for web development. Learn DOM manipulation, event handling, AJAX, and modern JavaScript frameworks.",
+            "instructor_id": 2,
+            "level": CourseLevel.INTERMEDIATE,
+            "price": 69.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["JavaScript", "Web Development", "Frontend"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1627398242454-45a1465c2479?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
+        },
+        {
+            "id": 3,
+            "title": "Data Science with Python",
+            "description": "Explore data science using Python. Learn data analysis, visualization, machine learning, and statistical modeling techniques.",
+            "instructor_id": 3,
+            "level": CourseLevel.ADVANCED,
+            "price": 89.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Python", "Data Science", "Machine Learning"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
+        },
+        {
+            "id": 4,
+            "title": "Mobile App Development with Flutter",
+            "description": "Build cross-platform mobile apps with Flutter. Learn Dart programming language and create beautiful, responsive UIs for iOS and Android.",
+            "instructor_id": 4,
+            "level": CourseLevel.INTERMEDIATE,
+            "price": 79.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Flutter", "Mobile Development", "Dart"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
+        },
+        {
+            "id": 5,
+            "title": "DevOps and Cloud Computing",
+            "description": "Master DevOps practices and cloud computing. Learn CI/CD, containerization, orchestration, and cloud infrastructure management.",
+            "instructor_id": 5,
+            "level": CourseLevel.ADVANCED,
+            "price": 99.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["DevOps", "Cloud Computing", "Docker", "Kubernetes"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
+        }
+    ]
+
+    # Get trending courses from the hardcoded JSON data
+    trending_courses = [
+        {
+            "id": 101,
+            "title": "Machine Learning Fundamentals",
+            "description": "Master the core concepts of machine learning. Learn about supervised and unsupervised learning, neural networks, and practical applications.",
+            "instructor_id": 10,
+            "level": CourseLevel.INTERMEDIATE,
+            "price": 79.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Machine Learning", "AI", "Data Science", "Python"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1527474305487-b87b222841cc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
+        },
+        {
+            "id": 102,
+            "title": "Full Stack Web Development",
+            "description": "Become a full stack developer. Learn frontend technologies like React, backend with Node.js, and database management with MongoDB.",
+            "instructor_id": 11,
+            "level": CourseLevel.ADVANCED,
+            "price": 89.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Web Development", "JavaScript", "React", "Node.js", "MongoDB"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1547658719-da2b51169166?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
+        },
+        {
+            "id": 103,
+            "title": "Blockchain and Cryptocurrency",
+            "description": "Understand blockchain technology and cryptocurrency. Learn about smart contracts, decentralized applications, and the future of finance.",
+            "instructor_id": 12,
+            "level": CourseLevel.INTERMEDIATE,
+            "price": 99.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Blockchain", "Cryptocurrency", "Smart Contracts", "Ethereum"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1639762681057-408e52192e55?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
+        },
+        {
+            "id": 104,
+            "title": "UX/UI Design Masterclass",
+            "description": "Create beautiful and functional user interfaces. Learn design principles, prototyping, user research, and industry-standard tools.",
+            "instructor_id": 13,
+            "level": CourseLevel.BEGINNER,
+            "price": 69.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["UX Design", "UI Design", "Figma", "Adobe XD", "Prototyping"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
+        },
+        {
+            "id": 105,
+            "title": "Cybersecurity Essentials",
+            "description": "Protect systems and networks from digital attacks. Learn about encryption, network security, ethical hacking, and security best practices.",
+            "instructor_id": 14,
+            "level": CourseLevel.ADVANCED,
+            "price": 109.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Cybersecurity", "Network Security", "Ethical Hacking", "Encryption"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
+        }
+    ]
+
     return templates.TemplateResponse("base.html", {
         "request": request,
         "title": "Welcome to the Online Course Platform",
         "message": "Welcome to the Online Course Platform API",
         "version": "1.0.0",
         "documentation": "/docs",
+        "featured_courses": featured_courses,
+        "trending_courses": trending_courses,
     })
 
 # HTML UI routes
@@ -249,3 +389,78 @@ async def get_lesson_ui(request: Request, course_id: int, module_id: int, lesson
         "lesson": lesson,
         "completed_lessons": []  # This would be populated from user progress
     })
+
+
+@app.get("/api/trending-courses", response_model=List[Course])
+async def get_trending_courses():
+    """Get a list of trending courses."""
+    # Sample data for trending courses
+    trending_courses = [
+        {
+            "id": 101,
+            "title": "Machine Learning Fundamentals",
+            "description": "Master the core concepts of machine learning. Learn about supervised and unsupervised learning, neural networks, and practical applications.",
+            "instructor_id": 10,
+            "level": CourseLevel.INTERMEDIATE,
+            "price": 79.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Machine Learning", "AI", "Data Science", "Python"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1527474305487-b87b222841cc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
+        },
+        {
+            "id": 102,
+            "title": "Full Stack Web Development",
+            "description": "Become a full stack developer. Learn frontend technologies like React, backend with Node.js, and database management with MongoDB.",
+            "instructor_id": 11,
+            "level": CourseLevel.ADVANCED,
+            "price": 89.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Web Development", "JavaScript", "React", "Node.js", "MongoDB"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1547658719-da2b51169166?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
+        },
+        {
+            "id": 103,
+            "title": "Blockchain and Cryptocurrency",
+            "description": "Understand blockchain technology and cryptocurrency. Learn about smart contracts, decentralized applications, and the future of finance.",
+            "instructor_id": 12,
+            "level": CourseLevel.INTERMEDIATE,
+            "price": 99.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Blockchain", "Cryptocurrency", "Smart Contracts", "Ethereum"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1639762681057-408e52192e55?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80"
+        },
+        {
+            "id": 104,
+            "title": "UX/UI Design Masterclass",
+            "description": "Create beautiful and functional user interfaces. Learn design principles, prototyping, user research, and industry-standard tools.",
+            "instructor_id": 13,
+            "level": CourseLevel.BEGINNER,
+            "price": 69.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["UX Design", "UI Design", "Figma", "Adobe XD", "Prototyping"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
+        },
+        {
+            "id": 105,
+            "title": "Cybersecurity Essentials",
+            "description": "Protect systems and networks from digital attacks. Learn about encryption, network security, ethical hacking, and security best practices.",
+            "instructor_id": 14,
+            "level": CourseLevel.ADVANCED,
+            "price": 109.99,
+            "status": CourseStatus.PUBLISHED,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "tags": ["Cybersecurity", "Network Security", "Ethical Hacking", "Encryption"],
+            "thumbnail_url": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
+        }
+    ]
+
+    return trending_courses

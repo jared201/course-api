@@ -75,6 +75,23 @@ Once the server is running, you can access the auto-generated API documentation:
 - Swagger UI: http://127.0.0.1:8000/docs
 - ReDoc: http://127.0.0.1:8000/redoc
 
+## API Endpoints
+
+The API provides the following key endpoints:
+
+### Authentication
+- `POST /token`: Get an access token by providing username and password
+
+### Users
+- `POST /users/`: Create a new user
+- `GET /users/me`: Get the current authenticated user's profile
+
+### Courses
+- `GET /courses/`: List all published courses
+- `POST /courses/`: Create a new course (requires instructor role)
+- `GET /courses/{course_id}`: Get a specific course by ID
+- `GET /api/trending-courses`: Get a list of 5 trending courses
+
 ## Deployment
 
 ### Deploying to Heroku
