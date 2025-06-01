@@ -21,6 +21,10 @@ app = FastAPI(title="Online Course Platform API")
 # Configure templates
 templates = Jinja2Templates(directory="templates")
 
+# Add datetime.now function to templates
+from datetime import datetime
+templates.env.globals["now"] = datetime.now
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -121,12 +125,16 @@ async def create_course(
 
 
 @app.get("/courses/", response_model=List[Course])
-async def list_courses(skip: int = 0, limit: int = 100):
+async def list_courses(skip: int = 0, limit: int = 100, exclude: Optional[str] = None):
     """List all published courses."""
+    filters = {"status": CourseStatus.PUBLISHED}
+    # Handle the exclude parameter if provided
+    if exclude:
+        filters["exclude"] = exclude
     return await course_service.list_courses(
         skip=skip, 
         limit=limit, 
-        filters={"status": CourseStatus.PUBLISHED}
+        filters=filters
     )
 
 
@@ -156,12 +164,16 @@ async def root(request: Request):
 
 # HTML UI routes
 @app.get("/courses/ui", response_class=HTMLResponse)
-async def list_courses_ui(request: Request, skip: int = 0, limit: int = 100):
+async def list_courses_ui(request: Request, skip: int = 0, limit: int = 100, exclude: Optional[str] = None):
     """List all published courses with HTML UI."""
+    filters = {"status": CourseStatus.PUBLISHED}
+    # Handle the exclude parameter if provided
+    if exclude:
+        filters["exclude"] = exclude
     courses = await course_service.list_courses(
         skip=skip, 
         limit=limit, 
-        filters={"status": CourseStatus.PUBLISHED}
+        filters=filters
     )
     return templates.TemplateResponse("courses/list.html", {
         "request": request,
