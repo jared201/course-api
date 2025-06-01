@@ -3,42 +3,46 @@
 {% block title %}Available Courses{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">Available Courses</h1>
-        
-        <div class="row">
+<div class="columns">
+    <div class="column is-12">
+        <h1 class="title is-3 mb-4">Available Courses</h1>
+
+        <div class="columns is-multiline">
             {% for course in courses %}
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ course.title }}</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">{{ course.level }}</h6>
-                            <p class="card-text">{{ course.description }}</p>
-                            {% if course.tags %}
-                                <div class="mb-2">
-                                    {% for tag in course.tags %}
-                                        <span class="badge bg-secondary">{{ tag }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            <p class="card-text">
-                                <strong>Price:</strong> 
-                                {% if course.price == 0 %}
-                                    Free
-                                {% else %}
-                                    ${{ course.price }}
+                <div class="column is-4">
+                    <div class="card">
+                        <div class="card-content">
+                            <p class="title is-5">{{ course.title }}</p>
+                            <p class="subtitle is-6 has-text-grey">{{ course.level }}</p>
+                            <div class="content">
+                                <p>{{ course.description }}</p>
+                                {% if course.tags %}
+                                    <div class="mb-2">
+                                        {% for tag in course.tags %}
+                                            <span class="tag is-light">{{ tag }}</span>
+                                        {% endfor %}
+                                    </div>
                                 {% endif %}
-                            </p>
+                                <p>
+                                    <strong>Price:</strong> 
+                                    {% if course.price == 0 %}
+                                        Free
+                                    {% else %}
+                                        ${{ course.price }}
+                                    {% endif %}
+                                </p>
+                            </div>
                         </div>
                         <div class="card-footer">
-                            <a href="/courses/{{ course.id }}" class="btn btn-primary">View Course</a>
+                            <div class="card-footer-item">
+                                <a href="/courses/{{ course.id }}" class="button is-primary is-fullwidth">View Course</a>
+                            </div>
                         </div>
                     </div>
                 </div>
             {% else %}
-                <div class="col-12">
-                    <div class="alert alert-info">
+                <div class="column is-12">
+                    <div class="notification is-info">
                         No courses available at the moment. Please check back later.
                     </div>
                 </div>

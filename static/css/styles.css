@@ -5,7 +5,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: #333;
-    background-color: #f8f9fa;
+    background-color: #f5f5f5;
 }
 
 /* Header styles */
@@ -13,8 +13,7 @@ body {
     margin-bottom: 2rem;
 }
 
-.navbar-brand {
-    font-weight: bold;
+.navbar-item strong {
     font-size: 1.5rem;
 }
 
@@ -22,6 +21,7 @@ body {
 .card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     margin-bottom: 1.5rem;
+    height: 100%;
 }
 
 .card:hover {
@@ -29,44 +29,38 @@ body {
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
-.card-title {
+.title.is-5 {
     font-weight: bold;
-    color: #007bff;
+    color: #3273dc;
 }
 
-/* Badge styles */
-.badge {
-    font-weight: normal;
-    padding: 0.4em 0.8em;
+/* Tag styles */
+.tag {
     margin-right: 0.3rem;
 }
 
 /* Button styles */
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
+.button.is-primary {
+    background-color: #3273dc;
 }
 
-.btn-primary:hover {
-    background-color: #0069d9;
-    border-color: #0062cc;
+.button.is-primary:hover {
+    background-color: #276cda;
 }
 
-.btn-success {
-    background-color: #28a745;
-    border-color: #28a745;
+.button.is-success {
+    background-color: #48c774;
 }
 
-.btn-success:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
+.button.is-success:hover {
+    background-color: #3ec46d;
 }
 
 /* Footer styles */
 .footer {
     margin-top: 3rem;
     padding: 1.5rem 0;
-    color: #6c757d;
+    color: #7a7a7a;
     font-size: 0.9rem;
 }
 
@@ -98,27 +92,38 @@ body {
 }
 
 .lesson-content code {
-    background-color: #f8f9fa;
+    background-color: #f5f5f5;
     padding: 0.2rem 0.4rem;
     border-radius: 0.2rem;
     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .lesson-content pre {
-    background-color: #f8f9fa;
+    background-color: #f5f5f5;
     padding: 1rem;
     border-radius: 0.3rem;
     overflow-x: auto;
     margin-bottom: 1.5rem;
 }
 
+/* Breadcrumb styles */
+.breadcrumb {
+    margin-bottom: 1.5rem;
+}
+
+/* Border styles */
+.has-border-bottom {
+    border-bottom: 1px solid #dbdbdb;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .card-deck {
+    .columns {
         display: block;
     }
-    
-    .card {
+
+    .column {
+        width: 100%;
         margin-bottom: 1.5rem;
     }
 }
