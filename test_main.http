@@ -74,3 +74,9 @@ GET http://127.0.0.1:8000/courses/1
 Accept: application/json
 
 ###
+
+# Get trending courses
+GET http://127.0.0.1:8000/api/trending-courses
+Accept: application/json
+
+###

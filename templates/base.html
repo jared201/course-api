@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Online Course Platform{% endblock %}</title>
+    <title>{% block title %}Aralify Online Course Platform{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <link href="/static/css/styles.css" rel="stylesheet">
     <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"></script>
@@ -15,7 +15,7 @@
             <nav class="navbar" role="navigation" aria-label="main navigation">
                 <div class="navbar-brand">
                     <a class="navbar-item" href="/">
-                        <strong>Online Course Platform</strong>
+                        <strong>Aralify Online Course Platform</strong>
                     </a>
                     <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navMenu">
                         <span aria-hidden="true"></span>
@@ -38,12 +38,95 @@
             </nav>
         </div>
 
+        <!-- Jumbotron Section -->
+        <section class="hero is-primary is-bold">
+            <div class="hero-body">
+                <div class="container">
+                    <h1 class="title">
+                        Welcome to Aralify Online Course Platform
+                    </h1>
+                    <h2 class="subtitle">
+                        Expand your knowledge with our high-quality courses
+                    </h2>
+                    <a href="/courses" class="button is-white is-outlined">Browse All Courses</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Courses Section -->
+        {% if featured_courses %}
+        <section class="section">
+            <div class="container">
+                <h2 class="title is-3">Featured Courses</h2>
+                <div class="columns is-multiline">
+                    {% for course in featured_courses %}
+                    <div class="column is-one-third">
+                        <div class="card">
+                            {% if course.thumbnail_url %}
+                            <div class="card-image">
+                                <figure class="image is-16by9">
+                                    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
+                                </figure>
+                            </div>
+                            {% endif %}
+                            <div class="card-content">
+                                <p class="title is-4">{{ course.title }}</p>
+                                <p class="subtitle is-6">Level: {{ course.level }}</p>
+                                <div class="content">
+                                    {{ course.description[:100] }}{% if course.description|length > 100 %}...{% endif %}
+                                </div>
+                            </div>
+                            <footer class="card-footer">
+                                <a href="/courses/{{ course.id }}/ui" class="card-footer-item">View Course</a>
+                            </footer>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Trending Courses Section -->
+        {% if trending_courses %}
+        <section class="section">
+            <div class="container">
+                <h2 class="title is-3">Trending Courses</h2>
+                <div class="columns is-multiline">
+                    {% for course in trending_courses %}
+                    <div class="column is-one-third">
+                        <div class="card">
+                            {% if course.thumbnail_url %}
+                            <div class="card-image">
+                                <figure class="image is-16by9">
+                                    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
+                                </figure>
+                            </div>
+                            {% endif %}
+                            <div class="card-content">
+                                <p class="title is-4">{{ course.title }}</p>
+                                <p class="subtitle is-6">Level: {{ course.level }}</p>
+                                <div class="content">
+                                    {{ course.description[:100] }}{% if course.description|length > 100 %}...{% endif %}
+                                </div>
+                            </div>
+                            <footer class="card-footer">
+                                <a href="/courses/{{ course.id }}/ui" class="card-footer-item">View Course</a>
+                            </footer>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
         <main class="section">
             {% block content %}{% endblock %}
         </main>
 
         <div class="footer has-text-centered">
-            <p>&copy; {{ now().year }} Online Course Platform. All rights reserved.</p>
+            <p>&copy; {{ now().year }} Aralify Online Course Platform Hueburg Solutions Consulting, Inc. All rights reserved.</p>
         </div>
     </div>
 
