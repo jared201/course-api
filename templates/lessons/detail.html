@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}{{ lesson.title }} | {{ module.title }} | {{ course.title }}{% endblock %}
+{% block title %}{{ lesson.title }} | {{ module.title }} | {{ course.title }} | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}{{ lesson.title }} - {{ lesson.content_type }} lesson from the {{ module.title }} module in {{ course.title }} course. Enhance your skills with our comprehensive learning materials.{% endblock %}
+
+{% block meta_keywords %}{{ lesson.title }}, {{ module.title }}, {{ course.title }}, {{ course.level }}, {{ lesson.content_type }}, {% for tag in course.tags %}{{ tag }}{% if not loop.last %}, {% endif %}{% endfor %}, lesson, online education{% endblock %}
+
+{% block og_url %}https://aralify.com/courses/{{ course.id }}/modules/{{ module.id }}/lessons/{{ lesson.id }}/ui{% endblock %}
+
+{% block og_image %}{% if course.thumbnail_url %}{{ course.thumbnail_url }}{% else %}{{ super() }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="columns">
