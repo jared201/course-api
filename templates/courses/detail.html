@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}{{ course.title }}{% endblock %}
+{% block title %}{{ course.title }} | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}{{ course.description }}{% endblock %}
+
+{% block meta_keywords %}{{ course.title }}, {{ course.level }}, {% for tag in course.tags %}{{ tag }}{% if not loop.last %}, {% endif %}{% endfor %}, online course, e-learning{% endblock %}
+
+{% block og_url %}https://aralify.com/courses/{{ course.id }}/ui{% endblock %}
+
+{% block og_image %}{% if course.thumbnail_url %}{{ course.thumbnail_url }}{% else %}{{ super() }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="columns">
