@@ -39,11 +39,19 @@
                                         ${{ course.price }}
                                     {% endif %}
                                 </p>
+                                {% if course.start_date %}
+                                <p>
+                                    <strong>Start Date:</strong> {{ course.start_date.strftime('%B %d, %Y') }}
+                                </p>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="card-footer">
                             <div class="card-footer-item">
-                                <a href="/courses/{{ course.id }}" class="button is-primary is-fullwidth">View Course</a>
+                                <button onclick="viewCourseAsSPA('{{ course.id }}')" class="button is-primary">View Course</button>
+                            </div>
+                            <div class="card-footer-item">
+                                <button onclick="enrollCourse('{{ course.id }}')" class="button is-success">Enroll Now</button>
                             </div>
                         </div>
                     </div>
@@ -58,4 +66,38 @@
         </div>
     </div>
 </div>
+<script>
+    function enrollCourse(courseId) {
+        // Make a POST request to the enrollment endpoint
+        fetch(`/courses/${courseId}/enroll`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // User is not authenticated, redirect to login page
+                    window.location.href = '/login';
+                    return;
+                }
+                return response.json().then(data => {
+                    throw new Error(data.detail || 'Failed to enroll in course');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Show success message
+            alert('Successfully enrolled in the course!');
+            // Reload the page to reflect the changes
+            window.location.reload();
+        })
+        .catch(error => {
+            // Show error message
+            alert(error.message);
+        });
+    }
+</script>
 {% endblock %}
