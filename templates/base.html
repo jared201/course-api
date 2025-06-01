@@ -72,80 +72,107 @@
             </div>
         </section>
 
-        <!-- Featured Courses Section -->
-        {% if featured_courses %}
-        <section class="section">
-            <div class="container">
-                <h2 class="title is-3">Featured Courses</h2>
-                <div class="columns is-multiline">
-                    {% for course in featured_courses %}
-                    <div class="column is-one-third">
-                        <div class="card">
-                            {% if course.thumbnail_url %}
-                            <div class="card-image">
-                                <figure class="image is-16by9">
-                                    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
-                                </figure>
-                            </div>
-                            {% endif %}
-                            <div class="card-content">
-                                <p class="title is-4">{{ course.title }}</p>
-                                <p class="subtitle is-6">Level: {{ course.level }}</p>
-                                <div class="content">
-                                    {{ course.description[:100] }}{% if course.description|length > 100 %}...{% endif %}
+        <!-- Featured and Trending Courses Container -->
+        <div id="courses-container">
+            <!-- Featured Courses Section -->
+            {% if featured_courses %}
+            <section class="section">
+                <div class="container">
+                    <h2 class="title is-3">Featured Courses</h2>
+                    <div class="columns is-multiline">
+                        {% for course in featured_courses %}
+                        <div class="column is-one-third">
+                            <div class="card">
+                                {% if course.thumbnail_url %}
+                                <div class="card-image">
+                                    <figure class="image is-16by9">
+                                        <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
+                                    </figure>
                                 </div>
+                                {% endif %}
+                                <div class="card-content">
+                                    <p class="title is-4">{{ course.title }}</p>
+                                    <p class="subtitle is-6">Level: {{ course.level }}</p>
+                                    <div class="content">
+                                        {{ course.description[:100] }}{% if course.description|length > 100 %}...{% endif %}
+                                    </div>
+                                </div>
+                                <footer class="card-footer">
+                                    <a href="javascript:void(0)" class="card-footer-item" onclick="viewCourseAsSPA('{{ course.id }}')">View Course</a>
+                                    <a href="javascript:void(0)" class="card-footer-item" onclick="openCourseOverview('{{ course.id }}')">Quick Overview</a>
+                                </footer>
                             </div>
-                            <footer class="card-footer">
-                                <a href="/courses/{{ course.id }}/ui" class="card-footer-item">View Course</a>
-                            </footer>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
-        </section>
-        {% endif %}
+            </section>
+            {% endif %}
 
-        <!-- Trending Courses Section -->
-        {% if trending_courses %}
-        <section class="section">
-            <div class="container">
-                <h2 class="title is-3">Trending Courses</h2>
-                <div class="columns is-multiline">
-                    {% for course in trending_courses %}
-                    <div class="column is-one-third">
-                        <div class="card">
-                            {% if course.thumbnail_url %}
-                            <div class="card-image">
-                                <figure class="image is-16by9">
-                                    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
-                                </figure>
-                            </div>
-                            {% endif %}
-                            <div class="card-content">
-                                <p class="title is-4">{{ course.title }}</p>
-                                <p class="subtitle is-6">Level: {{ course.level }}</p>
-                                <div class="content">
-                                    {{ course.description[:100] }}{% if course.description|length > 100 %}...{% endif %}
+            <!-- Trending Courses Section -->
+            {% if trending_courses %}
+            <section class="section">
+                <div class="container">
+                    <h2 class="title is-3">Trending Courses</h2>
+                    <div class="columns is-multiline">
+                        {% for course in trending_courses %}
+                        <div class="column is-one-third">
+                            <div class="card">
+                                {% if course.thumbnail_url %}
+                                <div class="card-image">
+                                    <figure class="image is-16by9">
+                                        <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
+                                    </figure>
                                 </div>
+                                {% endif %}
+                                <div class="card-content">
+                                    <p class="title is-4">{{ course.title }}</p>
+                                    <p class="subtitle is-6">Level: {{ course.level }}</p>
+                                    <div class="content">
+                                        {{ course.description[:100] }}{% if course.description|length > 100 %}...{% endif %}
+                                    </div>
+                                </div>
+                                <footer class="card-footer">
+                                    <a href="javascript:void(0)" class="card-footer-item" onclick="viewCourseAsSPA('{{ course.id }}')">View Course</a>
+                                    <a href="javascript:void(0)" class="card-footer-item" onclick="openCourseOverview('{{ course.id }}')">Quick Overview</a>
+                                </footer>
                             </div>
-                            <footer class="card-footer">
-                                <a href="/courses/{{ course.id }}/ui" class="card-footer-item">View Course</a>
-                            </footer>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
-        </section>
-        {% endif %}
+            </section>
+            {% endif %}
+        </div>
 
         <main class="section">
-            {% block content %}{% endblock %}
+            <div id="spa-content">
+                {% block content %}{% endblock %}
+            </div>
         </main>
 
         <div class="footer has-text-centered">
             <p>&copy; {{ now().year }} Aralify Online Course Platform Hueburg Solutions Consulting, Inc. All rights reserved.</p>
+        </div>
+    </div>
+
+    <!-- Course Overview Modal -->
+    <div class="modal" id="courseOverviewModal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title" id="modalCourseTitle">Course Overview</p>
+                <button class="delete" aria-label="close" onclick="closeCourseOverview()"></button>
+            </header>
+            <section class="modal-card-body">
+                <div id="courseOverviewContent" class="content">
+                    <p>Loading course content...</p>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button id="viewFullCourseButton" class="button is-primary">View Full Course</button>
+                <button class="button" onclick="closeCourseOverview()">Close</button>
+            </footer>
         </div>
     </div>
 
@@ -166,8 +193,287 @@
                     $target.classList.toggle('is-active');
                 });
             });
+
+            // Check if SPA content is already present (e.g., direct navigation to a course page)
+            const spaContent = document.getElementById('spa-content');
+            const coursesContainer = document.getElementById('courses-container');
+            if (spaContent && spaContent.children.length > 0 && spaContent.textContent.trim() !== '') {
+                // If SPA content is present, hide the courses container
+                if (coursesContainer) {
+                    coursesContainer.style.display = 'none';
+                }
+            }
+
+            // Initialize collapsible modules if they exist on the page
+            initializeCollapsibleModules();
+
+            // Handle popstate events (browser back/forward buttons)
+            window.addEventListener('popstate', function(event) {
+                if (event.state && event.state.courseId) {
+                    viewCourseAsSPA(event.state.courseId, false);
+                } else {
+                    // If no state or no courseId, show the courses container and go back to the home page or course list
+                    const coursesContainer = document.getElementById('courses-container');
+                    if (coursesContainer) {
+                        coursesContainer.style.display = 'block';
+                    }
+                    window.location.href = event.state ? event.state.url : '/';
+                }
+            });
         });
+
+        // SPA View Course Function
+        function viewCourseAsSPA(courseId, pushState = true) {
+            // Show loading state
+            document.getElementById('spa-content').innerHTML = '<div class="has-text-centered"><p>Loading course content...</p><div class="loader is-loading"></div></div>';
+
+            // Hide the featured and trending courses container
+            const coursesContainer = document.getElementById('courses-container');
+            if (coursesContainer) {
+                coursesContainer.style.display = 'none';
+            }
+
+            // Fetch course data from the API
+            fetch(`/courses/${courseId}/ui`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Parse the HTML to extract the content block
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // Extract content from the content block in the template
+                    const contentBlock = doc.querySelector('[id^="content"]');
+                    let content;
+
+                    if (contentBlock) {
+                        // If there's a content block with an ID starting with "content", use its content
+                        content = contentBlock;
+                    } else {
+                        // Otherwise, look for content within the body
+                        const bodyContent = doc.body.querySelector('.columns');
+                        if (bodyContent) {
+                            content = bodyContent;
+                        } else {
+                            throw new Error('Could not find content in the response');
+                        }
+                    }
+
+                    // Update the page title
+                    document.title = doc.title;
+
+                    // Update the spa-content with the course details
+                    document.getElementById('spa-content').innerHTML = '';
+                    document.getElementById('spa-content').appendChild(content.cloneNode(true));
+
+                    // Update the URL without reloading the page
+                    if (pushState) {
+                        const newUrl = `/courses/${courseId}/ui`;
+                        history.pushState({ courseId: courseId, url: newUrl }, document.title, newUrl);
+                    }
+
+                    // Initialize any JavaScript in the loaded content
+                    const scripts = Array.from(document.getElementById('spa-content').querySelectorAll('script'));
+                    scripts.forEach(script => {
+                        const newScript = document.createElement('script');
+                        Array.from(script.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        newScript.textContent = script.textContent;
+                        script.parentNode.replaceChild(newScript, script);
+                    });
+
+                    // Initialize collapsible modules
+                    initializeCollapsibleModules();
+                })
+                .catch(error => {
+                    console.error('Error fetching course data:', error);
+                    document.getElementById('spa-content').innerHTML = '<div class="notification is-danger">Error loading course content. Please try again later.</div>';
+                });
+        }
+
+        // Course Overview Modal Functions
+        function openCourseOverview(courseId) {
+            // Show loading state
+            document.getElementById('courseOverviewContent').innerHTML = '<p>Loading course content...</p>';
+            document.getElementById('courseOverviewModal').classList.add('is-active');
+
+            // Fetch course data from the API
+            fetch(`/api/courses/${courseId}/overview`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(course => {
+                    // Update the modal title
+                    document.getElementById('modalCourseTitle').textContent = course.title;
+
+                    // Add click event listener to the view full course button
+                    document.getElementById('viewFullCourseButton').onclick = function() {
+                        closeCourseOverview();
+                        viewCourseAsSPA(course.id);
+                    };
+
+                    // Generate the course overview content
+                    let content = `
+                        <p>${course.description}</p>
+
+                        <div class="tags">
+                            <span class="tag is-primary">${course.level}</span>
+                            ${course.tags.map(tag => `<span class="tag is-light">${tag}</span>`).join('')}
+                        </div>
+
+                        <h4 class="title is-5 mt-4">Course Content</h4>
+                    `;
+
+                    // Add modules and lessons
+                    content += generateModulesAndLessons(course.modules);
+
+                    // Update the modal content
+                    document.getElementById('courseOverviewContent').innerHTML = content;
+                })
+                .catch(error => {
+                    console.error('Error fetching course data:', error);
+                    document.getElementById('courseOverviewContent').innerHTML = '<p>Error loading course content. Please try again later.</p>';
+                });
+        }
+
+        function closeCourseOverview() {
+            document.getElementById('courseOverviewModal').classList.remove('is-active');
+        }
+
+        function generateModulesAndLessons(modules) {
+            // Generate HTML for modules and lessons
+
+            let html = '<div class="modules-container">';
+
+            modules.forEach(module => {
+                html += `
+                    <div class="box module-box">
+                        <h5 class="title is-6">Module ${module.order}: ${module.title}</h5>
+                        <p>${module.description}</p>
+
+                        <div class="lessons-container mt-3">
+                `;
+
+                module.lessons.forEach(lesson => {
+                    html += `
+                        <div class="lesson-item">
+                            <div class="is-flex is-justify-content-space-between is-align-items-center">
+                                <span>${lesson.title}</span>
+                                <div class="buttons are-small">
+                    `;
+
+                    if (lesson.content_type === 'video') {
+                        html += `
+                            <button class="button is-info">
+                                <span class="icon">
+                                    <i class="fas fa-video"></i>
+                                </span>
+                                <span>Video</span>
+                            </button>
+                        `;
+                    } else if (lesson.content_type === 'quiz') {
+                        html += `
+                            <button class="button is-warning">
+                                <span class="icon">
+                                    <i class="fas fa-question-circle"></i>
+                                </span>
+                                <span>Quiz</span>
+                            </button>
+                        `;
+                    } else if (lesson.content_type === 'text') {
+                        html += `
+                            <button class="button is-primary">
+                                <span class="icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </span>
+                                <span>Text</span>
+                            </button>
+                        `;
+                    } else if (lesson.content_type === 'assignment') {
+                        html += `
+                            <button class="button is-success">
+                                <span class="icon">
+                                    <i class="fas fa-tasks"></i>
+                                </span>
+                                <span>Assignment</span>
+                            </button>
+                        `;
+                    } else if (lesson.content_type === 'file') {
+                        html += `
+                            <button class="button is-link">
+                                <span class="icon">
+                                    <i class="fas fa-file-download"></i>
+                                </span>
+                                <span>File</span>
+                            </button>
+                        `;
+                    }
+
+                    html += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            return html;
+        }
+
+        // Function to initialize collapsible modules
+        function initializeCollapsibleModules() {
+            const toggleLinks = document.querySelectorAll('[data-toggle="collapse"]');
+            toggleLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = document.querySelector(link.getAttribute('href'));
+                    if (target.style.display === 'none' || target.style.display === '') {
+                        target.style.display = 'block';
+                        link.setAttribute('aria-expanded', 'true');
+                    } else {
+                        target.style.display = 'none';
+                        link.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            });
+
+            // Initially hide all collapse content
+            document.querySelectorAll('.collapse-content').forEach(content => {
+                content.style.display = 'none';
+            });
+        }
     </script>
+
+    <style>
+        .module-box {
+            margin-bottom: 1rem;
+        }
+
+        .lesson-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .lesson-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

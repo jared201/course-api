@@ -11,7 +11,7 @@
 {% block og_image %}{% if course.thumbnail_url %}{{ course.thumbnail_url }}{% else %}{{ super() }}{% endif %}{% endblock %}
 
 {% block content %}
-<div class="columns">
+<div id="content-to-extract" class="columns">
     <div class="column is-8">
         <h1 class="title is-3 mb-3">{{ course.title }}</h1>
 
@@ -63,29 +63,7 @@
                 </div>
             {% endfor %}
 
-            <script>
-                document.addEventListener('DOMContentLoaded', () => {
-                    const toggleLinks = document.querySelectorAll('[data-toggle="collapse"]');
-                    toggleLinks.forEach(link => {
-                        link.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            const target = document.querySelector(link.getAttribute('href'));
-                            if (target.style.display === 'none' || target.style.display === '') {
-                                target.style.display = 'block';
-                                link.setAttribute('aria-expanded', 'true');
-                            } else {
-                                target.style.display = 'none';
-                                link.setAttribute('aria-expanded', 'false');
-                            }
-                        });
-                    });
-
-                    // Initially hide all collapse content
-                    document.querySelectorAll('.collapse-content').forEach(content => {
-                        content.style.display = 'none';
-                    });
-                });
-            </script>
+            <!-- Collapsible modules are now handled by initializeCollapsibleModules() in base.html -->
         </div>
     </div>
 
@@ -124,6 +102,7 @@
                         {% endif %}
                     {% else %}
                         <a href="/login?next=/courses/{{ course.id }}" class="button is-primary is-fullwidth">Login to Enroll</a>
+                        <a href="/" class="button is-light is-fullwidth mt-2">Cancel</a>
                     {% endif %}
                 </div>
             </div>
