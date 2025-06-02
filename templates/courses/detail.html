@@ -15,6 +15,14 @@
     <div class="column is-8">
         <h1 class="title is-3 mb-3">{{ course.title }}</h1>
 
+        {% if course.thumbnail_url %}
+        <div class="mb-4">
+            <figure class="image is-16by9">
+                <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
+            </figure>
+        </div>
+        {% endif %}
+
         <div class="mb-4">
             <span class="tag is-primary">{{ course.level }}</span>
             {% for tag in course.tags %}
