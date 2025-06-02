@@ -178,7 +178,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Initialize services
 user_service = UserService()
-course_service = CourseService()
+course_service = CourseService(featured_courses=featured_courses, trending_courses=trending_courses)
 content_service = ContentService()
 enrollment_service = EnrollmentService()
 progress_service = ProgressService()
@@ -314,12 +314,13 @@ async def root(request: Request):
     })
 
 # HTML UI routes
+@app.get("/courses", response_class=HTMLResponse)
 @app.get("/courses/ui", response_class=HTMLResponse)
 async def list_courses_ui(request: Request, skip: int = 0, limit: int = 100, exclude: Optional[str] = None):
     """List all published courses with HTML UI."""
     filters = {"status": CourseStatus.PUBLISHED}
-    # Handle the exclude parameter if provided
-    if exclude:
+    # Handle the exclude parameter if provided and not empty
+    if exclude and exclude.strip():
         filters["exclude"] = exclude
     courses = await course_service.list_courses(
         skip=skip, 
@@ -327,13 +328,9 @@ async def list_courses_ui(request: Request, skip: int = 0, limit: int = 100, exc
         filters=filters
     )
 
-    # Since course_service.list_courses() returns an empty list,
-    # we'll use the hardcoded featured_courses and trending_courses instead
-    all_courses = featured_courses + trending_courses
-
     return templates.TemplateResponse("courses/list.html", {
         "request": request,
-        "courses": all_courses,
+        "courses": courses,
         "featured_courses": featured_courses,
         "trending_courses": trending_courses
     })

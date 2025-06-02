@@ -15,58 +15,176 @@
     <div class="column is-12">
         <h1 class="title is-3 mb-4">Available Courses</h1>
 
-        <div class="columns is-multiline">
+        <div id="courses-list" class="stack-layout">
             {% for course in courses %}
-                <div class="column is-4">
-                    <div class="card">
-                        <div class="card-content">
-                            <p class="title is-5">{{ course.title }}</p>
-                            <p class="subtitle is-6 has-text-grey">{{ course.level }}</p>
-                            <div class="content">
-                                <p>{{ course.description }}</p>
-                                {% if course.tags %}
-                                    <div class="mb-2">
-                                        {% for tag in course.tags %}
-                                            <span class="tag is-light">{{ tag }}</span>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                                <p>
-                                    <strong>Price:</strong> 
-                                    {% if course.price == 0 %}
-                                        Free
-                                    {% else %}
-                                        ${{ course.price }}
+                <div class="course-item card mb-4" data-course-id="{{ course.id }}">
+                    <div class="card-content">
+                        <div class="columns">
+                            {% if course.thumbnail_url %}
+                            <div class="column is-2">
+                                <figure class="image is-128x128">
+                                    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" style="object-fit: cover; height: 100%; width: 100%;">
+                                </figure>
+                            </div>
+                            {% endif %}
+                            <div class="column {% if course.thumbnail_url %}is-10{% else %}is-12{% endif %}">
+                                <p class="title is-5">{{ course.title }}</p>
+                                <p class="subtitle is-6 has-text-grey">{{ course.level }}</p>
+                                <div class="content">
+                                    <p>{{ course.description }}</p>
+                                    {% if course.tags %}
+                                        <div class="mb-2">
+                                            {% for tag in course.tags %}
+                                                <span class="tag is-light">{{ tag }}</span>
+                                            {% endfor %}
+                                        </div>
                                     {% endif %}
-                                </p>
-                                {% if course.start_date %}
-                                <p>
-                                    <strong>Start Date:</strong> {{ course.start_date.strftime('%B %d, %Y') }}
-                                </p>
-                                {% endif %}
+                                    <p>
+                                        <strong>Price:</strong> 
+                                        {% if course.price == 0 %}
+                                            Free
+                                        {% else %}
+                                            ${{ course.price }}
+                                        {% endif %}
+                                    </p>
+                                    {% if course.start_date %}
+                                    <p>
+                                        <strong>Start Date:</strong> {{ course.start_date.strftime('%B %d, %Y') }}
+                                    </p>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                        <div class="card-footer">
-                            <div class="card-footer-item">
-                                <button onclick="viewCourseAsSPA('{{ course.id }}')" class="button is-primary">View Course</button>
-                            </div>
-                            <div class="card-footer-item">
-                                <button onclick="enrollCourse('{{ course.id }}')" class="button is-success">Enroll Now</button>
-                            </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="card-footer-item">
+                            <button onclick="viewCourseAsSPA('{{ course.id }}')" class="button is-primary">View Course</button>
+                        </div>
+                        <div class="card-footer-item">
+                            <button onclick="enrollCourse('{{ course.id }}')" class="button is-success">Enroll Now</button>
                         </div>
                     </div>
                 </div>
             {% else %}
-                <div class="column is-12">
-                    <div class="notification is-info">
-                        No courses available at the moment. Please check back later.
-                    </div>
+                <div class="notification is-info">
+                    No courses available at the moment. Please check back later.
                 </div>
             {% endfor %}
         </div>
+
+        <!-- Pagination controls -->
+        <nav class="pagination is-centered mt-5" role="navigation" aria-label="pagination">
+            <a class="pagination-previous" id="prev-page">Previous</a>
+            <a class="pagination-next" id="next-page">Next</a>
+            <ul class="pagination-list" id="pagination-numbers">
+                <!-- Page numbers will be generated by JavaScript -->
+            </ul>
+        </nav>
     </div>
 </div>
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pagination configuration
+        const itemsPerPage = 5;
+        let currentPage = 1;
+        const courseItems = document.querySelectorAll('.course-item');
+        const totalPages = Math.ceil(courseItems.length / itemsPerPage);
+
+        // Initialize pagination
+        setupPagination();
+        showPage(currentPage);
+
+        // Set up event listeners for pagination controls
+        document.getElementById('prev-page').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                showPage(currentPage);
+                updatePaginationButtons();
+            }
+        });
+
+        document.getElementById('next-page').addEventListener('click', function() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                showPage(currentPage);
+                updatePaginationButtons();
+            }
+        });
+
+        // Function to set up pagination
+        function setupPagination() {
+            const paginationList = document.getElementById('pagination-numbers');
+            paginationList.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.className = 'pagination-link';
+                a.setAttribute('aria-label', 'Goto page ' + i);
+                a.textContent = i;
+                a.addEventListener('click', function() {
+                    currentPage = i;
+                    showPage(currentPage);
+                    updatePaginationButtons();
+                });
+
+                li.appendChild(a);
+                paginationList.appendChild(li);
+            }
+
+            updatePaginationButtons();
+        }
+
+        // Function to show a specific page
+        function showPage(page) {
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+
+            courseItems.forEach((item, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Function to update pagination buttons
+        function updatePaginationButtons() {
+            // Update Previous button
+            const prevButton = document.getElementById('prev-page');
+            if (currentPage === 1) {
+                prevButton.classList.add('is-disabled');
+                prevButton.setAttribute('disabled', 'disabled');
+            } else {
+                prevButton.classList.remove('is-disabled');
+                prevButton.removeAttribute('disabled');
+            }
+
+            // Update Next button
+            const nextButton = document.getElementById('next-page');
+            if (currentPage === totalPages) {
+                nextButton.classList.add('is-disabled');
+                nextButton.setAttribute('disabled', 'disabled');
+            } else {
+                nextButton.classList.remove('is-disabled');
+                nextButton.removeAttribute('disabled');
+            }
+
+            // Update page number buttons
+            const pageLinks = document.querySelectorAll('.pagination-link');
+            pageLinks.forEach((link, index) => {
+                if (index + 1 === currentPage) {
+                    link.classList.add('is-current');
+                    link.setAttribute('aria-current', 'page');
+                } else {
+                    link.classList.remove('is-current');
+                    link.removeAttribute('aria-current');
+                }
+            });
+        }
+    });
+
     function enrollCourse(courseId) {
         // Make a POST request to the enrollment endpoint
         fetch(`/courses/${courseId}/enroll`, {

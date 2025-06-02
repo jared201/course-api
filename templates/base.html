@@ -34,7 +34,7 @@
             <nav class="navbar" role="navigation" aria-label="main navigation">
                 <div class="navbar-brand">
                     <a class="navbar-item" href="/">
-                        <strong>Aralify Online Course Platform</strong>
+                        <strong style="font-size: xx-large; color: lightgreen;">Aralify</strong>
                     </a>
                     <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navMenu">
                         <span aria-hidden="true"></span>
@@ -44,7 +44,7 @@
                 </div>
                 <div id="navMenu" class="navbar-menu">
                     <div class="navbar-end">
-                        <a class="navbar-item" href="/courses">Courses</a>
+                        <a class="navbar-item" href="/courses" id="courses-tab" >Courses</a>
                         {% if user %}
                             <a class="navbar-item" href="/dashboard">Dashboard</a>
                             <a class="navbar-item" href="/logout">Logout</a>
@@ -198,7 +198,7 @@
             const spaContent = document.getElementById('spa-content');
             const coursesContainer = document.getElementById('courses-container');
             if (spaContent && spaContent.children.length > 0 && spaContent.textContent.trim() !== '') {
-                // If SPA content is present, hide the courses container
+                // If SPA content is present, hide the course container
                 if (coursesContainer) {
                     coursesContainer.style.display = 'none';
                 }
@@ -212,7 +212,7 @@
                 if (event.state && event.state.courseId) {
                     viewCourseAsSPA(event.state.courseId, false);
                 } else {
-                    // If no state or no courseId, show the courses container and go back to the home page or course list
+                    // If no state or no courseId, show the course container and go back to the home page or course list
                     const coursesContainer = document.getElementById('courses-container');
                     if (coursesContainer) {
                         coursesContainer.style.display = 'block';
@@ -456,6 +456,82 @@
             document.querySelectorAll('.collapse-content').forEach(content => {
                 content.style.display = 'none';
             });
+        }
+
+        // Function to load courses list as SPA
+        function loadCoursesAsSPA(event) {
+            event.preventDefault();
+
+            // Show loading state
+            document.getElementById('spa-content').innerHTML = '<div class="has-text-centered"><p>Loading courses...</p><div class="loader is-loading"></div></div>';
+
+            // Hide the featured and trending courses container
+            const coursesContainer = document.getElementById('courses-container');
+            if (coursesContainer) {
+                coursesContainer.style.display = 'none';
+            }
+
+            // Fetch courses list from the API with explicit default parameters
+            fetch('/courses/ui?skip=0&limit=100&exclude=')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Parse the HTML to extract the content block
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // Extract content from the content block in the template
+                    const contentBlock = doc.querySelector('[id^="content"]');
+                    let content;
+
+                    if (contentBlock) {
+                        // If there's a content block with an ID starting with "content", use its content
+                        content = contentBlock;
+                    } else {
+                        // Otherwise, look for content within the body
+                        const bodyContent = doc.body.querySelector('.columns');
+                        if (bodyContent) {
+                            content = bodyContent;
+                        } else {
+                            throw new Error('Could not find content in the response');
+                        }
+                    }
+
+                    // Update the page title
+                    document.title = doc.title;
+
+                    // Update the spa-content with the courses list
+                    document.getElementById('spa-content').innerHTML = '';
+                    document.getElementById('spa-content').appendChild(content.cloneNode(true));
+
+                    // Update the URL without reloading the page
+                    const newUrl = '/courses';
+                    history.pushState({ url: newUrl }, document.title, newUrl);
+
+                    // Initialize any JavaScript in the loaded content
+                    const scripts = Array.from(document.getElementById('spa-content').querySelectorAll('script'));
+                    scripts.forEach(script => {
+                        const newScript = document.createElement('script');
+                        Array.from(script.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        newScript.textContent = script.textContent;
+                        script.parentNode.replaceChild(newScript, script);
+                    });
+
+                    // Trigger the DOMContentLoaded event for the loaded content
+                    // This will initialize the pagination functionality
+                    const event = new Event('DOMContentLoaded');
+                    document.dispatchEvent(event);
+                })
+                .catch(error => {
+                    console.error('Error fetching courses list:', error);
+                    document.getElementById('spa-content').innerHTML = '<div class="notification is-danger">Error loading courses. Please try again later.</div>';
+                });
         }
     </script>
 

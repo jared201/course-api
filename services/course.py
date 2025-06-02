@@ -37,6 +37,10 @@ class Course(BaseModel):
 class CourseService:
     """Service for managing courses in the online course platform."""
 
+    def __init__(self, featured_courses=None, trending_courses=None):
+        self.featured_courses = featured_courses or []
+        self.trending_courses = trending_courses or []
+
     async def create_course(self, course_data: dict) -> Course:
         """Create a new course."""
         course = Course(**course_data)
@@ -64,7 +68,24 @@ class CourseService:
                           filters: Optional[Dict[str, Any]] = None) -> List[Course]:
         """List all courses with pagination and optional filtering."""
         # In a real implementation, this would fetch from a database with filters
-        return []
+        # For now, use the hardcoded courses from instance variables
+        all_courses = self.featured_courses + self.trending_courses
+
+        # Apply filters if provided
+        if filters:
+            # Filter by status if specified
+            if "status" in filters:
+                all_courses = [c for c in all_courses if c["status"] == filters["status"]]
+
+            # Exclude specific courses if specified
+            if "exclude" in filters:
+                all_courses = [c for c in all_courses if str(c["id"]) != filters["exclude"]]
+
+        # Apply pagination
+        paginated_courses = all_courses[skip:skip + limit]
+
+        # Convert to Course objects
+        return [Course(**course) for course in paginated_courses]
 
     async def publish_course(self, course_id: int) -> Optional[Course]:
         """Change course status to published."""
