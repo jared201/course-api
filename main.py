@@ -507,6 +507,41 @@ async def get_lesson_ui(request: Request, course_id: int, module_id: int, lesson
         "trending_courses": trending_courses
     })
 
+@app.get("/login", response_class=HTMLResponse)
+async def login_ui(request: Request):
+    """Render the login page."""
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "featured_courses": featured_courses,
+        "trending_courses": trending_courses
+    })
+
+@app.post("/login", response_class=HTMLResponse)
+async def login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...)
+):
+    """Handle login form submission."""
+    # Authenticate user
+    user_data = await auth_service.authenticate_user(username, password)
+    if not user_data:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Invalid username or password",
+            "username": username,
+            "featured_courses": featured_courses,
+            "trending_courses": trending_courses
+        })
+
+    # Create access token
+    token = await auth_service.create_access_token(data=user_data)
+
+    # In a real implementation, you would set the token in a cookie or session
+
+    # Redirect to home page or dashboard
+    return RedirectResponse(url="/", status_code=303)
+
 @app.get("/register", response_class=HTMLResponse)
 async def register_ui(request: Request):
     """Render the registration page."""
