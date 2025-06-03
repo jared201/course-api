@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 
@@ -506,6 +506,65 @@ async def get_lesson_ui(request: Request, course_id: int, module_id: int, lesson
         "featured_courses": featured_courses,
         "trending_courses": trending_courses
     })
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_ui(request: Request):
+    """Render the registration page."""
+    return templates.TemplateResponse("register.html", {
+        "request": request,
+        "featured_courses": featured_courses,
+        "trending_courses": trending_courses
+    })
+
+@app.post("/register", response_class=HTMLResponse)
+async def register_user(
+    request: Request,
+    username: str = Form(...),
+    email: str = Form(...),
+    full_name: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    role: str = Form(...)
+):
+    """Handle registration form submission."""
+    # Check if passwords match
+    if password != confirm_password:
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Passwords do not match",
+            "username": username,
+            "email": email,
+            "full_name": full_name,
+            "featured_courses": featured_courses,
+            "trending_courses": trending_courses
+        })
+
+    # Create user
+    try:
+        user_data = {
+            "username": username,
+            "email": email,
+            "full_name": full_name,
+            "password": password,
+            "role": role
+        }
+        user = UserCreate(**user_data)
+        created_user = await user_service.create_user(user.dict(exclude={"password"}))
+
+        # In a real implementation, you would log the user in here
+
+        # Redirect to login page
+        return RedirectResponse(url="/login", status_code=303)
+    except Exception as e:
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": str(e),
+            "username": username,
+            "email": email,
+            "full_name": full_name,
+            "featured_courses": featured_courses,
+            "trending_courses": trending_courses
+        })
 
 
 @app.get("/api/courses/{course_id}/overview")

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Aralify Online Course Platform{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title has-text-centered">Register for Aralify</h1>
+        <div class="columns is-centered">
+            <div class="column is-half">
+                <div class="box">
+                    {% if error %}
+                    <div class="notification is-danger">
+                        {{ error }}
+                    </div>
+                    {% endif %}
+                    <form method="post" action="/register">
+                        <div class="field">
+                            <label class="label">Username</label>
+                            <div class="control">
+                                <input class="input" type="text" name="username" placeholder="Enter username" value="{{ username or '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Email</label>
+                            <div class="control">
+                                <input class="input" type="email" name="email" placeholder="Enter email" value="{{ email or '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Full Name</label>
+                            <div class="control">
+                                <input class="input" type="text" name="full_name" placeholder="Enter full name" value="{{ full_name or '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Password</label>
+                            <div class="control">
+                                <input class="input" type="password" name="password" placeholder="Enter password" required>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Confirm Password</label>
+                            <div class="control">
+                                <input class="input" type="password" name="confirm_password" placeholder="Confirm password" required>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Role</label>
+                            <div class="control">
+                                <div class="select">
+                                    <select name="role">
+                                        <option value="student">Student</option>
+                                        <option value="instructor">Instructor</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <button class="button is-primary is-fullwidth" type="submit">Register</button>
+                            </div>
+                        </div>
+
+                        <div class="has-text-centered mt-4">
+                            <p>Already have an account? <a href="/login">Login</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
