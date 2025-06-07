@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}View and edit your profile information on Aralify Online Course Platform.{% endblock %}
+
+{% block meta_keywords %}user profile, account details, personal information, online education{% endblock %}
+
+{% block og_url %}https://aralify.com/profile{% endblock %}
+
+{% block og_title %}User Profile | Aralify Online Course Platform{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <!-- Left Sidebar -->
+    <div class="column is-3">
+        <aside class="menu dashboard-sidebar">
+            <p class="menu-label">
+                Dashboard
+            </p>
+            <ul class="menu-list">
+                <li><a href="/dashboard">Overview</a></li>
+            </ul>
+            <p class="menu-label">
+                Courses
+            </p>
+            <ul class="menu-list">
+                <li><a href="/my-courses">Enrolled Courses</a></li>
+                <li><a href="/my-courses#completed">Completed Courses</a></li>
+            </ul>
+            <p class="menu-label">
+                Account
+            </p>
+            <ul class="menu-list">
+                <li><a href="/profile" class="is-active">Profile</a></li>
+                <li><a href="/settings">Settings</a></li>
+            </ul>
+        </aside>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="column is-9">
+        <h1 class="title is-3 mb-4">My Profile</h1>
+
+        <!-- Profile Information Section -->
+        <div class="section">
+            <div class="card">
+                <div class="card-content">
+                    <div class="content">
+                        <div class="field">
+                            <label class="label">Username</label>
+                            <div class="control">
+                                <input class="input" type="text" value="{{ user_details.username }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label">Email</label>
+                            <div class="control">
+                                <input class="input" type="email" value="{{ user_details.email }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label">Full Name</label>
+                            <div class="control">
+                                <input class="input" type="text" value="{{ user_details.full_name }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label">Role</label>
+                            <div class="control">
+                                <input class="input" type="text" value="{{ user_details.role }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label">Member Since</label>
+                            <div class="control">
+                                <input class="input" type="text" value="{{ user_details.created_at.strftime('%B %d, %Y') }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <footer class="card-footer">
+                    <a href="/settings" class="card-footer-item">Edit Profile</a>
+                </footer>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

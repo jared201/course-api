@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}My Courses | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}View your enrolled courses. Track your learning progress and discover new courses to enhance your skills.{% endblock %}
+
+{% block meta_keywords %}student courses, enrolled courses, learning progress, online education{% endblock %}
+
+{% block og_url %}https://aralify.com/my-courses{% endblock %}
+
+{% block og_title %}My Courses | Aralify Online Course Platform{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <!-- Left Sidebar -->
+    <div class="column is-3">
+        <aside class="menu dashboard-sidebar">
+            <p class="menu-label">
+                Dashboard
+            </p>
+            <ul class="menu-list">
+                <li><a href="/dashboard">Overview</a></li>
+            </ul>
+            <p class="menu-label">
+                Courses
+            </p>
+            <ul class="menu-list">
+                <li><a href="/my-courses" class="is-active">Enrolled Courses</a></li>
+                <li><a href="/my-courses#completed">Completed Courses</a></li>
+            </ul>
+            <p class="menu-label">
+                Account
+            </p>
+            <ul class="menu-list">
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/settings">Settings</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <!-- Main Content -->
+    <div class="column is-9">
+        <h3 class="title is-3 mb-4">My Courses</h3>
+
+        <!-- Enrolled Courses Section -->
+        <div class="section">
+            {% if enrolled_courses %}
+                <div id="enrolled-courses-list" class="stack-layout">
+                    {% for course in enrolled_courses %}
+                        <div class="course-item card mb-4" data-course-id="{{ course.id }}">
+                            <div class="card-content">
+                                <div class="columns">
+                                    {% if course.thumbnail_url %}
+                                    <div class="column is-2">
+                                        <figure class="image is-128x128">
+                                            <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" style="object-fit: cover; height: 100%; width: 100%;">
+                                        </figure>
+                                    </div>
+                                    {% endif %}
+                                    <div class="column {% if course.thumbnail_url %}is-10{% else %}is-12{% endif %}">
+                                        <p class="title is-5">{{ course.title }}</p>
+                                        <p class="subtitle is-6 has-text-grey">{{ course.level }}</p>
+                                        <div class="content">
+                                            <p>{{ course.description }}</p>
+                                            {% if course.tags %}
+                                                <div class="mb-2">
+                                                    {% for tag in course.tags %}
+                                                        <span class="tag is-light">{{ tag }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <p>
+                                                <strong>Enrolled on:</strong> {{ course.enrolled_at.strftime('%B %d, %Y') }}
+                                            </p>
+                                            <p>
+                                                <strong>Status:</strong> 
+                                                <span class="tag is-primary">In Progress</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="card-footer-item">
+                                    <button onclick="viewCourseAsSPA('{{ course.id }}')" class="button is-primary">Continue Learning</button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="notification is-info">
+                    <p>no enrolled courses</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Completed Courses Section -->
+        <div class="section" id="completed">
+            <h2 class="title is-4">Completed Courses</h2>
+            {% if completed_courses %}
+            <div id="completed-courses-list" class="stack-layout">
+                {% for course in completed_courses %}
+                    <div class="course-item card mb-4" data-course-id="{{ course.id }}">
+                        <div class="card-content">
+                            <div class="columns">
+                                {% if course.thumbnail_url %}
+                                <div class="column is-2">
+                                    <figure class="image is-128x128">
+                                        <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" style="object-fit: cover; height: 100%; width: 100%;">
+                                    </figure>
+                                </div>
+                                {% endif %}
+                                <div class="column {% if course.thumbnail_url %}is-10{% else %}is-12{% endif %}">
+                                    <p class="title is-5">{{ course.title }}</p>
+                                    <p class="subtitle is-6 has-text-grey">{{ course.level }}</p>
+                                    <div class="content">
+                                        <p>{{ course.description }}</p>
+                                        {% if course.tags %}
+                                            <div class="mb-2">
+                                                {% for tag in course.tags %}
+                                                    <span class="tag is-light">{{ tag }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <p>
+                                            <strong>Completed on:</strong> {{ course.completed_at.strftime('%B %d, %Y') }}
+                                        </p>
+                                        <p>
+                                            <strong>Status:</strong> 
+                                            <span class="tag is-success">Completed</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="card-footer-item">
+                                <button onclick="viewCourseAsSPA('{{ course.id }}')" class="button is-primary">Review Course</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <div class="notification is-light">
+                    <p>You haven't completed any courses yet. Keep learning and you'll see your achievements here!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function enrollCourse(courseId) {
+        // Make a POST request to the enrollment endpoint
+        fetch(`/courses/${courseId}/enroll`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // User is not authenticated, redirect to login page
+                    window.location.href = '/login';
+                    return;
+                }
+                return response.json().then(data => {
+                    throw new Error(data.detail || 'Failed to enroll in course');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Show success message
+            alert('Successfully enrolled in the course!');
+            // Reload the page to reflect the changes
+            window.location.reload();
+        })
+        .catch(error => {
+            // Show error message
+            alert(error.message);
+        });
+    }
+</script>
+{% endblock %}

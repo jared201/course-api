@@ -76,7 +76,17 @@ class AuthService:
     async def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> Token:
         """Create a JWT access token."""
         # In a real implementation, this would create a JWT token
-        access_token = "access_token_placeholder"
+        # For this implementation, we'll create a token in the format "username:role"
+
+        # Special case for admin placeholder
+        if data.get("username") == "admin" and data.get("role") == "admin":
+            access_token = "access_token_placeholder"
+        else:
+            # Create token in format "username:role"
+            username = data.get("username", "")
+            role = data.get("role", "")
+            access_token = f"{username}:{role}"
+
         refresh_token = await self.create_refresh_token(data, expires_delta)
 
         # Set expiration time
@@ -99,25 +109,48 @@ class AuthService:
         return "refresh_token_placeholder"
 
     async def verify_token(self, token: str, token_type: TokenType = TokenType.ACCESS) -> Optional[TokenData]:
-        """Verify a JWT token and return the decoded data."""
-        # In a real implementation, this would verify and decode a JWT token
-        # For now, we'll implement a simple verification for the placeholder token
+        """
+        Extract username from token and return user data without token verification.
+        This modified implementation skips token verification and directly uses username from Redis.
+        """
+        from services.user import UserService, UserRole
 
         # Remove 'Bearer ' prefix if present
         if token.startswith("Bearer "):
             token = token[7:]
 
+        # For the placeholder token, return admin user
         if token == "access_token_placeholder":
-            # Import UserRole here to avoid circular imports
-            from services.user import UserRole
-
-            # Return a mock TokenData for the admin user
             return TokenData(
                 user_id=999,
                 username="admin",
                 role=UserRole.ADMIN,
                 exp=datetime.now() + timedelta(minutes=15)
             )
+
+        # Extract username from token (in a real implementation, this would be from JWT payload)
+        # For this implementation, we'll assume the token format is "username:role"
+        try:
+            # Try to parse the token as "username:role"
+            parts = token.split(":")
+            if len(parts) >= 1:
+                username = parts[0]
+
+                # Get user from Redis
+                user_service = UserService()
+                user = await user_service.get_user_by_username(username)
+
+                if user:
+                    # Return TokenData with user information
+                    return TokenData(
+                        user_id=user.id,
+                        username=user.username,
+                        role=user.role,
+                        exp=datetime.now() + timedelta(minutes=15)
+                    )
+        except Exception as e:
+            print(f"Error extracting username from token: {e}")
+
         return None
 
     async def refresh_access_token(self, refresh_token: str) -> Optional[Token]:
