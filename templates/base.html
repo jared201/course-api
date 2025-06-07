@@ -46,6 +46,11 @@
                     <div class="navbar-end">
                         <a class="navbar-item" href="/courses" id="courses-tab" >Courses</a>
                         {% if user %}
+                            {% if user.role == "student" %}
+                                <a class="navbar-item" href="/my-courses">My Courses</a>
+                            {% elif user.role == "instructor" %}
+                                <a class="navbar-item" href="/my-lessons">My Lessons</a>
+                            {% endif %}
                             <a class="navbar-item" href="/dashboard">Dashboard</a>
                             <a class="navbar-item" href="/logout">Logout</a>
                         {% else %}

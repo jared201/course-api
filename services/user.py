@@ -51,7 +51,9 @@ class UserService:
 
         # Generate a unique ID if not provided
         if "id" not in user_data or user_data["id"] is None:
-            user_data["id"] = str(uuid.uuid4())
+            # Generate a unique integer ID based on timestamp
+            import time
+            user_data["id"] = int(time.time() * 1000)
 
         user = User(**user_data)
 

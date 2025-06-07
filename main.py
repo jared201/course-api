@@ -195,7 +195,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
-    """Dependency to get the current authenticated user."""
+    """Dependency to get the current authenticated user from Authorization header."""
+    return await authenticate_user_with_token(token)
+
+
+async def authenticate_user_with_token(token: str) -> User:
+    """Authenticate a user with a token."""
     token_data = await auth_service.verify_token(token)
     if token_data is None:
         raise HTTPException(
@@ -225,6 +230,23 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         )
 
     return user
+
+
+async def get_current_user_from_cookie(request: Request) -> User:
+    """Dependency to get the current authenticated user from cookie."""
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Remove 'Bearer ' prefix if present
+    if token.startswith("Bearer "):
+        token = token[7:]
+
+    return await authenticate_user_with_token(token)
 
 
 # Authentication endpoints
@@ -322,6 +344,14 @@ async def get_course(course_id: int):
 async def root(request: Request):
     """Root endpoint with API information."""
 
+    # Try to get the current user from cookie
+    user = None
+    try:
+        user = await get_current_user_from_cookie(request)
+    except HTTPException:
+        # User is not authenticated, continue without user
+        pass
+
     return templates.TemplateResponse("base.html", {
         "request": request,
         "title": "Welcome to the Online Course Platform",
@@ -330,6 +360,7 @@ async def root(request: Request):
         "documentation": "/docs",
         "featured_courses": featured_courses,
         "trending_courses": trending_courses,
+        "user": user
     })
 
 # HTML UI routes
@@ -361,11 +392,20 @@ async def list_courses_ui(request: Request, skip: int = 0, limit: int = 100, exc
     featured_courses_list = await course_service.list_courses(filters=featured_filters)
     trending_courses_list = await course_service.list_courses(filters=trending_filters)
 
+    # Try to get the current user from cookie
+    user = None
+    try:
+        user = await get_current_user_from_cookie(request)
+    except HTTPException:
+        # User is not authenticated, continue without user
+        pass
+
     return templates.TemplateResponse("courses/list.html", {
         "request": request,
         "courses": courses,
         "featured_courses": featured_courses_list,
-        "trending_courses": trending_courses_list
+        "trending_courses": trending_courses_list,
+        "user": user
     })
 
 @app.get("/courses/{course_id}/ui", response_class=HTMLResponse)
@@ -465,12 +505,20 @@ async def get_course_ui(request: Request, course_id: int):
     # Add enrolled_students field
     course_with_modules["enrolled_students"] = []  # Empty list by default
 
+    # Try to get the current user from cookie
+    user = None
+    try:
+        user = await get_current_user_from_cookie(request)
+    except HTTPException:
+        # User is not authenticated, continue without user
+        pass
+
     return templates.TemplateResponse("courses/detail.html", {
         "request": request,
         "course": course_with_modules,
         "featured_courses": featured_courses,
         "trending_courses": trending_courses,
-        "user": None  # Default to None if no user is authenticated
+        "user": user
     })
 
 @app.get("/courses/{course_id}/modules/{module_id}/ui", response_class=HTMLResponse)
@@ -490,13 +538,22 @@ async def get_module_ui(request: Request, course_id: int, module_id: int):
             detail="Module not found",
         )
 
+    # Try to get the current user from cookie
+    user = None
+    try:
+        user = await get_current_user_from_cookie(request)
+    except HTTPException:
+        # User is not authenticated, continue without user
+        pass
+
     return templates.TemplateResponse("modules/detail.html", {
         "request": request,
         "course": course,
         "module": module,
         "completed_lessons": [],  # This would be populated from user progress
         "featured_courses": featured_courses,
-        "trending_courses": trending_courses
+        "trending_courses": trending_courses,
+        "user": user
     })
 
 @app.get("/courses/{course_id}/modules/{module_id}/lessons/{lesson_id}/ui", response_class=HTMLResponse)
@@ -523,6 +580,14 @@ async def get_lesson_ui(request: Request, course_id: int, module_id: int, lesson
             detail="Lesson not found",
         )
 
+    # Try to get the current user from cookie
+    user = None
+    try:
+        user = await get_current_user_from_cookie(request)
+    except HTTPException:
+        # User is not authenticated, continue without user
+        pass
+
     return templates.TemplateResponse("lessons/detail.html", {
         "request": request,
         "course": course,
@@ -530,17 +595,35 @@ async def get_lesson_ui(request: Request, course_id: int, module_id: int, lesson
         "lesson": lesson,
         "completed_lessons": [],  # This would be populated from user progress
         "featured_courses": featured_courses,
-        "trending_courses": trending_courses
+        "trending_courses": trending_courses,
+        "user": user
     })
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_ui(request: Request):
     """Render the login page."""
+    # Check if user is already logged in
+    try:
+        user = await get_current_user_from_cookie(request)
+        # If we get here, user is logged in, redirect to home page
+        return RedirectResponse(url="/", status_code=303)
+    except HTTPException:
+        # User is not logged in, show login page
+        pass
+
     return templates.TemplateResponse("login.html", {
         "request": request,
         "featured_courses": featured_courses,
         "trending_courses": trending_courses
     })
+
+
+@app.get("/logout", response_class=HTMLResponse)
+async def logout(request: Request):
+    """Log out the current user by clearing the cookie."""
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie(key="access_token")
+    return response
 
 @app.post("/login", response_class=HTMLResponse)
 async def login(
@@ -563,14 +646,31 @@ async def login(
     # Create access token
     token = await auth_service.create_access_token(data=user_data)
 
-    # In a real implementation, you would set the token in a cookie or session
+    # Set the token in a cookie
+    response = RedirectResponse(url="/", status_code=303)
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {token.access_token}",
+        httponly=True,
+        max_age=1800,  # 30 minutes
+        expires=token.expires_at.timestamp()
+    )
 
     # Redirect to home page or dashboard
-    return RedirectResponse(url="/", status_code=303)
+    return response
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_ui(request: Request):
     """Render the registration page."""
+    # Check if user is already logged in
+    try:
+        user = await get_current_user_from_cookie(request)
+        # If we get here, user is logged in, redirect to home page
+        return RedirectResponse(url="/", status_code=303)
+    except HTTPException:
+        # User is not logged in, show registration page
+        pass
+
     return templates.TemplateResponse("register.html", {
         "request": request,
         "featured_courses": featured_courses,
@@ -602,6 +702,19 @@ async def register_user(
 
     # Create user
     try:
+        # Check if user with this username already exists
+        existing_user = await user_service.get_user_by_username(username)
+        if existing_user:
+            return templates.TemplateResponse("register.html", {
+                "request": request,
+                "error": "Username already exists",
+                "email": email,
+                "full_name": full_name,
+                "featured_courses": featured_courses,
+                "trending_courses": trending_courses
+            })
+
+        # Prepare user data for creation
         user_data = {
             "username": username,
             "email": email,
@@ -609,13 +722,27 @@ async def register_user(
             "password": password,
             "role": role
         }
-        user = UserCreate(**user_data)
-        created_user = await user_service.create_user(user.dict())
+        # Directly pass the dictionary to create_user method
+        created_user = await user_service.create_user(user_data)
 
-        # In a real implementation, you would log the user in here
+        # Log the user in by creating an access token
+        user_token_data = {
+            "user_id": created_user.id,
+            "username": created_user.username,
+            "role": created_user.role
+        }
+        token = await auth_service.create_access_token(data=user_token_data)
 
-        # Redirect to login page
-        return RedirectResponse(url="/login", status_code=303)
+        # Set the token in a cookie and redirect to home page
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie(
+            key="access_token",
+            value=f"Bearer {token.access_token}",
+            httponly=True,
+            max_age=1800,  # 30 minutes
+            expires=token.expires_at.timestamp()
+        )
+        return response
     except Exception as e:
         return templates.TemplateResponse("register.html", {
             "request": request,
@@ -823,3 +950,55 @@ async def move_courses_to_redis(current_user: User = Depends(get_current_user)):
             "total_courses": len(all_course_ids)
         }
     })
+
+
+@app.get("/my-courses", response_class=HTMLResponse)
+async def my_courses(request: Request):
+    """Show the current user's enrolled courses."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request)
+
+        # Check if user is a student
+        if user.role != UserRole.STUDENT:
+            return RedirectResponse(url="/", status_code=303)
+
+        # In a real implementation, you would fetch the user's enrolled courses
+        # For now, we'll just display a placeholder message
+        return templates.TemplateResponse("base.html", {
+            "request": request,
+            "user": user,
+            "title": "My Courses",
+            "message": "Your enrolled courses will be displayed here.",
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except HTTPException:
+        # User is not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/my-lessons", response_class=HTMLResponse)
+async def my_lessons(request: Request):
+    """Show the current instructor's lessons."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request)
+
+        # Check if user is an instructor
+        if user.role != UserRole.INSTRUCTOR:
+            return RedirectResponse(url="/", status_code=303)
+
+        # In a real implementation, you would fetch the instructor's lessons
+        # For now, we'll just display a placeholder message
+        return templates.TemplateResponse("base.html", {
+            "request": request,
+            "user": user,
+            "title": "My Lessons",
+            "message": "Your lessons will be displayed here.",
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except HTTPException:
+        # User is not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=303)
