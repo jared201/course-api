@@ -10,3 +10,5 @@ passlib>=1.7.4,<2.0.0
 bcrypt>=4.0.1,<5.0.0
 sqlalchemy>=1.4.0,<2.0.0
 databases>=0.7.0,<0.8.0
+redis>=4.5.0
+requests>=2.25.0,<3.0.0
