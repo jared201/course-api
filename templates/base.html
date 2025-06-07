@@ -51,7 +51,9 @@
                             {% elif user.role == "instructor" %}
                                 <a class="navbar-item" href="/my-lessons">My Lessons</a>
                             {% endif %}
-                            <a class="navbar-item" href="javascript:void(0)" onclick="loadDashboardAsSPA(event)">Dashboard</a>
+                            {% if user.role == "admin" %}
+                                <a class="navbar-item" href="javascript:void(0)" onclick="loadDashboardAsSPA(event)">Dashboard</a>
+                            {% endif %}
                             <a class="navbar-item" href="/logout">Logout</a>
                         {% else %}
                             <a class="navbar-item" href="/login">Login</a>
