@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
+import json
 
 
 class CourseLevel(str, Enum):
@@ -37,9 +38,10 @@ class Course(BaseModel):
 class CourseService:
     """Service for managing courses in the online course platform."""
 
-    def __init__(self, featured_courses=None, trending_courses=None):
+    def __init__(self, featured_courses=None, trending_courses=None, redis_manager=None):
         self.featured_courses = featured_courses or []
         self.trending_courses = trending_courses or []
+        self.redis_manager = redis_manager
 
     async def create_course(self, course_data: dict) -> Course:
         """Create a new course."""
@@ -49,7 +51,30 @@ class CourseService:
 
     async def get_course(self, course_id: int) -> Optional[Course]:
         """Get a course by ID."""
-        # In a real implementation, this would fetch from a database
+        # If Redis manager is available, try to fetch from Redis
+        if self.redis_manager and self.redis_manager.is_connected():
+            course_key = f"course:{course_id}"
+            course_data = self.redis_manager.get(course_key)
+            if course_data:
+                try:
+                    # Parse the JSON data
+                    course_dict = json.loads(course_data)
+                    # Convert ISO format strings back to datetime objects
+                    if "created_at" in course_dict:
+                        course_dict["created_at"] = datetime.fromisoformat(course_dict["created_at"])
+                    if "updated_at" in course_dict:
+                        course_dict["updated_at"] = datetime.fromisoformat(course_dict["updated_at"])
+                    if "start_date" in course_dict and course_dict["start_date"]:
+                        course_dict["start_date"] = datetime.fromisoformat(course_dict["start_date"])
+                    return Course(**course_dict)
+                except Exception as e:
+                    print(f"Error parsing course data from Redis: {e}")
+
+        # Fallback to searching in instance variables
+        for course in self.featured_courses + self.trending_courses:
+            if course.get("id") == course_id:
+                return Course(**course)
+
         return None
 
     async def update_course(self, course_id: int, course_data: dict) -> Optional[Course]:
@@ -67,9 +92,36 @@ class CourseService:
                           limit: int = 100, 
                           filters: Optional[Dict[str, Any]] = None) -> List[Course]:
         """List all courses with pagination and optional filtering."""
-        # In a real implementation, this would fetch from a database with filters
-        # For now, use the hardcoded courses from instance variables
-        all_courses = self.featured_courses + self.trending_courses
+        # Initialize empty list for courses
+        all_courses = []
+
+        # If Redis manager is available, try to fetch from Redis
+        if self.redis_manager and self.redis_manager.is_connected():
+            try:
+                # Determine which set to use based on filters
+                set_key = "all_courses"
+                if filters and "featured" in filters and filters["featured"]:
+                    set_key = "featured_courses"
+                elif filters and "trending" in filters and filters["trending"]:
+                    set_key = "trending_courses"
+
+                # Get all course IDs from the appropriate set
+                course_ids = self.redis_manager.smembers(set_key)
+
+                # Fetch each course by ID
+                for course_id in course_ids:
+                    course_key = f"course:{course_id}"
+                    course_data = self.redis_manager.get(course_key)
+                    if course_data:
+                        course_dict = json.loads(course_data)
+                        all_courses.append(course_dict)
+            except Exception as e:
+                print(f"Error fetching courses from Redis: {e}")
+                # Fallback to instance variables
+                all_courses = self.featured_courses + self.trending_courses
+        else:
+            # Fallback to instance variables
+            all_courses = self.featured_courses + self.trending_courses
 
         # Apply filters if provided
         if filters:
@@ -84,8 +136,21 @@ class CourseService:
         # Apply pagination
         paginated_courses = all_courses[skip:skip + limit]
 
-        # Convert to Course objects
-        return [Course(**course) for course in paginated_courses]
+        # Convert to Course objects and handle datetime conversion
+        result = []
+        for course in paginated_courses:
+            # Convert ISO format strings back to datetime objects if needed
+            course_copy = course.copy()
+            if isinstance(course_copy.get("created_at"), str):
+                course_copy["created_at"] = datetime.fromisoformat(course_copy["created_at"])
+            if isinstance(course_copy.get("updated_at"), str):
+                course_copy["updated_at"] = datetime.fromisoformat(course_copy["updated_at"])
+            if course_copy.get("start_date") and isinstance(course_copy["start_date"], str):
+                course_copy["start_date"] = datetime.fromisoformat(course_copy["start_date"])
+
+            result.append(Course(**course_copy))
+
+        return result
 
     async def publish_course(self, course_id: int) -> Optional[Course]:
         """Change course status to published."""

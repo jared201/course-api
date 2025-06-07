@@ -39,54 +39,162 @@ class Permission(str, Enum):
 
 class AuthService:
     """Service for authentication and authorization in the online course platform."""
-    
+
     async def authenticate_user(self, username: str, password: str) -> Optional[Dict[str, Any]]:
         """Authenticate a user with username and password."""
-        # In a real implementation, this would verify credentials against a database
-        # and return user data if valid
+        from services.user import UserService
+
+        # Get the user service
+        user_service = UserService()
+
+        # Get the user by username
+        user = await user_service.get_user_by_username(username)
+        if not user:
+            return None
+
+        # Get the stored password
+        if not user_service.redis_client:
+            return None
+
+        try:
+            password_key = f"user_password:{username}"
+            stored_password = user_service.redis_client.get(password_key)
+
+            # Check if password matches
+            if stored_password and stored_password == password:
+                # Return user data for token creation
+                return {
+                    "user_id": user.id,
+                    "username": user.username,
+                    "role": user.role
+                }
+        except Exception as e:
+            print(f"Error authenticating user: {e}")
+
         return None
-    
-    async def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+
+    async def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> Token:
         """Create a JWT access token."""
         # In a real implementation, this would create a JWT token
-        return "access_token_placeholder"
-    
+        access_token = "access_token_placeholder"
+        refresh_token = await self.create_refresh_token(data, expires_delta)
+
+        # Set expiration time
+        if expires_delta:
+            expires_at = datetime.now() + expires_delta
+        else:
+            expires_at = datetime.now() + timedelta(minutes=15)
+
+        # Create and return Token object
+        return Token(
+            access_token=access_token,
+            token_type="bearer",
+            expires_at=expires_at,
+            refresh_token=refresh_token
+        )
+
     async def create_refresh_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
         """Create a JWT refresh token."""
         # In a real implementation, this would create a JWT token
         return "refresh_token_placeholder"
-    
+
     async def verify_token(self, token: str, token_type: TokenType = TokenType.ACCESS) -> Optional[TokenData]:
         """Verify a JWT token and return the decoded data."""
         # In a real implementation, this would verify and decode a JWT token
+        # For now, we'll implement a simple verification for the placeholder token
+
+        # Remove 'Bearer ' prefix if present
+        if token.startswith("Bearer "):
+            token = token[7:]
+
+        if token == "access_token_placeholder":
+            # Import UserRole here to avoid circular imports
+            from services.user import UserRole
+
+            # Return a mock TokenData for the admin user
+            return TokenData(
+                user_id=999,
+                username="admin",
+                role=UserRole.ADMIN,
+                exp=datetime.now() + timedelta(minutes=15)
+            )
         return None
-    
+
     async def refresh_access_token(self, refresh_token: str) -> Optional[Token]:
         """Use a refresh token to generate a new access token."""
         # In a real implementation, this would verify the refresh token and create a new access token
         return None
-    
+
     async def has_permission(self, user_id: int, permission: Permission) -> bool:
         """Check if a user has a specific permission."""
         # In a real implementation, this would check user roles and permissions
         return False
-    
+
     async def get_user_permissions(self, user_id: int) -> Dict[Permission, bool]:
         """Get all permissions for a user."""
         # In a real implementation, this would fetch user roles and calculate permissions
         return {permission: False for permission in Permission}
-    
+
     async def change_password(self, user_id: int, old_password: str, new_password: str) -> bool:
         """Change a user's password."""
-        # In a real implementation, this would verify the old password and update to the new one
+        from services.user import UserService
+
+        # Get the user service
+        user_service = UserService()
+
+        # Get the user by ID
+        user = await user_service.get_user(user_id)
+        if not user:
+            return False
+
+        # Verify old password
+        if not user_service.redis_client:
+            return False
+
+        try:
+            password_key = f"user_password:{user.username}"
+            stored_password = user_service.redis_client.get(password_key)
+
+            # Check if old password matches
+            if stored_password and stored_password == old_password:
+                # Update password
+                user_service.redis_client.set(password_key, new_password)
+                return True
+        except Exception as e:
+            print(f"Error changing password: {e}")
+
         return False
-    
+
     async def generate_password_reset_token(self, email: str) -> Optional[str]:
         """Generate a password reset token for a user."""
         # In a real implementation, this would create a token and store it
         return None
-    
+
     async def reset_password(self, token: str, new_password: str) -> bool:
         """Reset a user's password using a reset token."""
-        # In a real implementation, this would verify the token and update the password
+        from services.user import UserService
+
+        # In a real implementation, this would verify the token and get the username
+        # For this implementation, we'll assume the token is the username for simplicity
+        username = token
+
+        # Get the user service
+        user_service = UserService()
+
+        # Get the user by username
+        user = await user_service.get_user_by_username(username)
+        if not user:
+            return False
+
+        # Update password
+        if not user_service.redis_client:
+            return False
+
+        try:
+            password_key = f"user_password:{username}"
+            user_service.redis_client.set(password_key, new_password)
+            return True
+        except Exception as e:
+            print(f"Error resetting password: {e}")
+
         return False
