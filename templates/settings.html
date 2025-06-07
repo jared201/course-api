@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}Manage your account settings and preferences on Aralify Online Course Platform.{% endblock %}
+
+{% block meta_keywords %}account settings, user preferences, notification settings, privacy settings, online education{% endblock %}
+
+{% block og_url %}https://aralify.com/settings{% endblock %}
+
+{% block og_title %}Account Settings | Aralify Online Course Platform{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <!-- Left Sidebar -->
+    <div class="column is-3">
+        <aside class="menu dashboard-sidebar">
+            <p class="menu-label">
+                Dashboard
+            </p>
+            <ul class="menu-list">
+                <li><a href="/dashboard">Overview</a></li>
+            </ul>
+            <p class="menu-label">
+                Courses
+            </p>
+            <ul class="menu-list">
+                <li><a href="/my-courses">Enrolled Courses</a></li>
+                <li><a href="/my-courses#completed">Completed Courses</a></li>
+            </ul>
+            <p class="menu-label">
+                Account
+            </p>
+            <ul class="menu-list">
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/settings" class="is-active">Settings</a></li>
+            </ul>
+        </aside>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="column is-9">
+        <h1 class="title is-3 mb-4">Account Settings</h1>
+
+        <!-- Settings Form Section -->
+        <div class="section">
+            <div class="card">
+                <div class="card-content">
+                    <form id="settings-form">
+                        <h3 class="title is-5 mb-4">Profile Settings</h3>
+                        
+                        <div class="field">
+                            <label class="label">Full Name</label>
+                            <div class="control">
+                                <input class="input" type="text" name="full_name" value="{{ user.full_name }}">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label">Email</label>
+                            <div class="control">
+                                <input class="input" type="email" name="email" value="{{ user.email }}">
+                            </div>
+                            <p class="help">Changing your email will require verification.</p>
+                        </div>
+                        
+                        <h3 class="title is-5 mt-5 mb-4">Password</h3>
+                        
+                        <div class="field">
+                            <label class="label">Current Password</label>
+                            <div class="control">
+                                <input class="input" type="password" name="current_password">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label">New Password</label>
+                            <div class="control">
+                                <input class="input" type="password" name="new_password">
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="label">Confirm New Password</label>
+                            <div class="control">
+                                <input class="input" type="password" name="confirm_password">
+                            </div>
+                        </div>
+                        
+                        <h3 class="title is-5 mt-5 mb-4">Notification Settings</h3>
+                        
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="email_notifications" checked>
+                                    Receive email notifications
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="course_updates" checked>
+                                    Notify me about course updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <div class="control">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="new_courses" checked>
+                                    Notify me about new courses
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="field mt-5">
+                            <div class="control">
+                                <button type="submit" class="button is-primary">Save Changes</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('settings-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // In a real implementation, this would send the form data to the server
+        alert('Settings saved successfully!');
+    });
+</script>
+{% endblock %}

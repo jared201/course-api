@@ -51,7 +51,7 @@
                             {% elif user.role == "instructor" %}
                                 <a class="navbar-item" href="/my-lessons">My Lessons</a>
                             {% endif %}
-                            <a class="navbar-item" href="/dashboard">Dashboard</a>
+                            <a class="navbar-item" href="javascript:void(0)" onclick="loadDashboardAsSPA(event)">Dashboard</a>
                             <a class="navbar-item" href="/logout">Logout</a>
                         {% else %}
                             <a class="navbar-item" href="/login">Login</a>
@@ -536,6 +536,87 @@
                 .catch(error => {
                     console.error('Error fetching courses list:', error);
                     document.getElementById('spa-content').innerHTML = '<div class="notification is-danger">Error loading courses. Please try again later.</div>';
+                });
+        }
+
+        // Function to load dashboard as SPA
+        function loadDashboardAsSPA(event) {
+            event.preventDefault();
+
+            // Show loading state
+            document.getElementById('spa-content').innerHTML = '<div class="has-text-centered"><p>Loading dashboard...</p><div class="loader is-loading"></div></div>';
+
+            // Hide the featured and trending courses container
+            const coursesContainer = document.getElementById('courses-container');
+            if (coursesContainer) {
+                coursesContainer.style.display = 'none';
+            }
+
+            // Fetch dashboard content based on user role
+            fetch('/my-courses')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Parse the HTML to extract the content block
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // Extract content from the content block in the template
+                    const contentBlock = doc.querySelector('[id^="content"]');
+                    let content;
+
+                    if (contentBlock) {
+                        // If there's a content block with an ID starting with "content", use its content
+                        content = contentBlock;
+                    } else {
+                        // Otherwise, look for content within the body
+                        const bodyContent = doc.body.querySelector('.columns');
+                        if (bodyContent) {
+                            content = bodyContent;
+                        } else {
+                            throw new Error('Could not find content in the response');
+                        }
+                    }
+
+                    // Update the page title
+                    document.title = doc.title;
+
+                    // Update the spa-content with the dashboard content
+                    document.getElementById('spa-content').innerHTML = '';
+                    document.getElementById('spa-content').appendChild(content.cloneNode(true));
+
+                    // Ensure featured and trending courses are not displayed
+                    const coursesContainer = document.getElementById('courses-container');
+                    if (coursesContainer) {
+                        coursesContainer.style.display = 'none';
+                    }
+
+                    // Update the URL without reloading the page
+                   /* const newUrl = '/dashboard';
+                    history.pushState({ url: newUrl }, document.title, newUrl);*/
+
+                    // Initialize any JavaScript in the loaded content
+                    const scripts = Array.from(document.getElementById('spa-content').querySelectorAll('script'));
+                    scripts.forEach(script => {
+                        const newScript = document.createElement('script');
+                        Array.from(script.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        newScript.textContent = script.textContent;
+                        script.parentNode.replaceChild(newScript, script);
+                    });
+
+                    // Trigger the DOMContentLoaded event for the loaded content
+                    const event = new Event('DOMContentLoaded');
+                    document.dispatchEvent(event);
+                })
+                .catch(error => {
+                    console.error('Error fetching dashboard:', error);
+                    document.getElementById('spa-content').innerHTML = '<div class="notification is-danger">Error loading dashboard. Please try again later.</div>';
                 });
         }
     </script>
