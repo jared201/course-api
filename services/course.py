@@ -25,16 +25,42 @@ class Course(BaseModel):
     instructor_id: int
     level: CourseLevel = CourseLevel.BEGINNER
     price: float = 0.0
+    duration: float = 0.0
     status: CourseStatus = CourseStatus.PENDING
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
     start_date: Optional[datetime] = None
     tags: List[str] = []
+    modules: List['Module'] = []
     thumbnail_url: Optional[str] = None
+
 
     class Config:
         orm_mode = True
 
+class Module(BaseModel):
+    id: Optional[int] = None
+    course_id: int
+    title: str
+    description: str
+    order: int = 0
+    created_at: datetime = datetime.now()
+    updated_at: datetime = datetime.now()
+    lessons: List['Lesson'] = []
+    class Config:
+        orm_mode = True
+
+class Lesson(BaseModel):
+    id: Optional[int] = None
+    module_id: int
+    title: str
+    content: str
+    order: int = 0
+    created_at: datetime = datetime.now()
+    updated_at: datetime = datetime.now()
+
+    class Config:
+        orm_mode = True
 
 class CourseService:
     """Service for managing courses in the online course platform."""
