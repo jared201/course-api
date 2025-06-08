@@ -12,6 +12,7 @@ class CourseLevel(str, Enum):
 
 
 class CourseStatus(str, Enum):
+    PENDING = "pending"
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
@@ -24,7 +25,7 @@ class Course(BaseModel):
     instructor_id: int
     level: CourseLevel = CourseLevel.BEGINNER
     price: float = 0.0
-    status: CourseStatus = CourseStatus.DRAFT
+    status: CourseStatus = CourseStatus.PENDING
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
     start_date: Optional[datetime] = None
@@ -45,9 +46,34 @@ class CourseService:
 
     async def create_course(self, course_data: dict) -> Course:
         """Create a new course."""
-        course = Course(**course_data)
-        # In a real implementation, this would save to a database
-        return course
+        # Always ensure Redis is connected before saving
+        if self.redis_manager:
+            try:
+                if not self.redis_manager.is_connected():
+                    self.redis_manager.connect()
+                # Generate a unique ID if not provided
+                if course_data.get("id") is None:
+                    course_data["id"] = int(datetime.now().timestamp())
+                # Convert datetime objects to strings for JSON serialization
+                course_dict = course_data
+                course_dict["created_at"] = course_dict["created_at"].isoformat()
+                course_dict["updated_at"] = course_dict["updated_at"].isoformat()
+                if course_dict["start_date"]:
+                    course_dict["start_date"] = course_dict["start_date"].isoformat()
+                # Store individual course
+                course_key = f"course:{course_dict['id']}"
+                result = self.redis_manager.set(course_key, json.dumps(course_dict))
+                if not result:
+                    print(f"Failed to save course {course_dict['id']} to Redis!")
+                else:
+                    print(f"Course {course_dict['id']} saved to Redis")
+                # Add to all courses set
+                self.redis_manager.sadd("all_courses", course_dict["id"])
+            except Exception as e:
+                print(f"Error saving course to Redis: {e}")
+        else:
+            print("Redis manager not set on CourseService!")
+        return course_data
 
     async def get_course(self, course_id: int) -> Optional[Course]:
         """Get a course by ID."""
@@ -163,6 +189,75 @@ class CourseService:
         return None
 
     async def get_instructor_courses(self, instructor_id: int) -> List[Course]:
-        """Get all courses by a specific instructor."""
-        # In a real implementation, this would fetch from a database
-        return []
+        """Get all courses by a specific instructor from Redis."""
+        courses = []
+        if self.redis_manager and self.redis_manager.is_connected():
+            try:
+                course_ids = self.redis_manager.smembers("all_courses")
+                for course_id in course_ids:
+                    course_key = f"course:{course_id}"
+                    course_data = self.redis_manager.get(course_key)
+                    if course_data:
+                        course_dict = json.loads(course_data)
+                        # Match instructor_id
+                        if str(course_dict.get("instructor_id")) == str(instructor_id):
+                            # Convert datetimes
+                            if isinstance(course_dict.get("created_at"), str):
+                                course_dict["created_at"] = datetime.fromisoformat(course_dict["created_at"])
+                            if isinstance(course_dict.get("updated_at"), str):
+                                course_dict["updated_at"] = datetime.fromisoformat(course_dict["updated_at"])
+                            if course_dict.get("start_date") and isinstance(course_dict["start_date"], str):
+                                course_dict["start_date"] = datetime.fromisoformat(course_dict["start_date"])
+                            courses.append(Course(**course_dict))
+            except Exception as e:
+                print(f"Error fetching instructor courses from Redis: {e}")
+        return courses
+
+    async def create_course(self, course_data: dict) -> Course:
+        """Create a new course."""
+        try:
+            if isinstance(course_data.get("level"), str):
+                print(f"[DEBUG] level from form: {course_data['level']}")
+                course_data["level"] = CourseLevel(course_data["level"].lower())
+            if isinstance(course_data.get("status"), str):
+                print(f"[DEBUG] status from form: {course_data['status']}")
+                course_data["status"] = CourseStatus(course_data["status"].lower())
+        except Exception as e:
+            print(f"Error converting level/status to Enum: {e}")
+
+        try:
+            print(f"[DEBUG] course_data before Course creation: {course_data}")
+            course = Course(**course_data)
+            print(f"[DEBUG] Course object created: {course}")
+        except Exception as e:
+            print(f"Error creating Course object: {e}\nData: {course_data}")
+            raise
+
+        # Always ensure Redis is connected before saving
+        if self.redis_manager:
+            try:
+                if not self.redis_manager.is_connected():
+                    self.redis_manager.connect()
+                # Generate a unique ID if not provided
+                if course.id is None:
+                    course.id = int(datetime.now().timestamp())
+                # Convert datetime objects to strings for JSON serialization
+                course_dict = course.dict()
+                course_dict["created_at"] = course_dict["created_at"].isoformat()
+                course_dict["updated_at"] = course_dict["updated_at"].isoformat()
+                if course_dict["start_date"]:
+                    course_dict["start_date"] = course_dict["start_date"].isoformat()
+                # Store individual course
+                course_key = f"course:{course.id}"
+                result = self.redis_manager.set(course_key, json.dumps(course_dict))
+                if not result:
+                    print(f"Failed to save course {course.id} to Redis!")
+                else:
+                    print(f"Course {course.id} saved to Redis")
+                # Add to all courses set
+                self.redis_manager.sadd("all_courses", course.id)
+            except Exception as e:
+                print(f"Error saving course to Redis: {e}")
+        else:
+            print("Redis manager not set on CourseService!")
+        return course

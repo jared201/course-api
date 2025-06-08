@@ -1055,7 +1055,7 @@ async def dashboard(request: Request, response: Response):
 
 @app.get("/my-lessons", response_class=HTMLResponse)
 async def my_lessons(request: Request, response: Response):
-    """Show the current instructor's lessons."""
+    """Show the current instructor's courses."""
     # Try to get the current user from cookie
     try:
         user = await get_current_user_from_cookie(request, response)
@@ -1064,26 +1064,19 @@ async def my_lessons(request: Request, response: Response):
         if user.role != UserRole.INSTRUCTOR:
             return RedirectResponse(url="/", status_code=303)
 
-        # Get instructor's lessons from Redis
-        instructor_lessons_key = f"instructor:{user.id}:lessons"
-        lesson_ids = redis_manager.smembers(instructor_lessons_key)
+        # Get instructor's courses from Redis
+        courses = await course_service.get_instructor_courses(user.id)
 
-        lessons = []
-        if lesson_ids:
-            for lesson_id in lesson_ids:
-                lesson = await content_service.get_lesson(int(lesson_id))
-                if lesson:
-                    # Convert Pydantic model to dict for template
-                    lesson_dict = lesson.dict()
-                    lessons.append(lesson_dict)
+        # Convert Pydantic models to dicts for template
+        course_dicts = [course.dict() for course in courses]
 
-        # Sort lessons by created_at (newest first)
-        lessons.sort(key=lambda x: x["created_at"], reverse=True)
+        # Sort courses by created_at (newest first)
+        course_dicts.sort(key=lambda x: x["created_at"], reverse=True)
 
         return templates.TemplateResponse("my_lessons.html", {
             "request": request,
             "user": user,
-            "lessons": lessons,
+            "courses": course_dicts,
             "featured_courses": [],
             "trending_courses": []
         })
@@ -1130,6 +1123,161 @@ async def create_lesson_form(request: Request, response: Response):
     except HTTPException:
         # User is not authenticated, redirect to login
         return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/create-course", response_class=HTMLResponse)
+async def create_course_form(request: Request, response: Response):
+    """Render the create course form."""
+    try:
+        user = await get_current_user_from_cookie(request, response)
+
+        # Check if user is an instructor
+        if user.role != UserRole.INSTRUCTOR:
+            return RedirectResponse(url="/", status_code=303)
+
+        return templates.TemplateResponse("courses/create_course.html", {
+            "request": request,
+            "user": user,
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except HTTPException:
+        # User is not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=303)
+
+
+@app.post("/create-course", response_class=HTMLResponse)
+async def create_course_submit(
+    request: Request,
+    response: Response,
+    title: str = Form(...),
+    description: str = Form(...),
+    level: str = Form(...),
+    price: float = Form(0.0),
+    tags: str = Form(""),
+    thumbnail_url: Optional[str] = Form(None),
+    start_date: Optional[str] = Form(None),
+    status: str = Form("pending"),
+):
+    """Handle course form submission."""
+    try:
+        user = await get_current_user_from_cookie(request, response)
+
+        # Check if user is an instructor
+        if user.role != UserRole.INSTRUCTOR:
+            return RedirectResponse(url="/", status_code=303)
+
+        # Parse start_date string to datetime if provided
+        from datetime import datetime
+        parsed_start_date = None
+        if start_date:
+            try:
+                parsed_start_date = datetime.fromisoformat(start_date)
+            except Exception as e:
+                print(f"Invalid start_date format: {start_date} - {e}")
+
+        # Process tags (convert comma-separated string to list)
+        tags_list = [tag.strip() for tag in tags.split(",")] if tags else []
+
+        # Create course data dictionary
+        course_data = {
+            "title": title,
+            "description": description,
+            "level": level,
+            "price": price,
+            "tags": tags_list,
+            "thumbnail_url": thumbnail_url,
+            "start_date": parsed_start_date,
+            "instructor_id": user.id,
+            "status": status
+        }
+
+        # Create the course
+        course = await course_service.create_course(course_data)
+
+        # Process module and lesson data
+        form = await request.form()
+
+        # Get all module titles and descriptions
+        module_titles = form.getlist("module_titles[]")
+        module_descriptions = form.getlist("module_descriptions[]")
+
+        # Get all lesson data
+        lesson_titles = form.getlist("lesson_titles[]")
+        lesson_descriptions = form.getlist("lesson_descriptions[]")
+        lesson_content_types = form.getlist("lesson_content_types[]")
+        lesson_contents = form.getlist("lesson_contents[]")
+        lesson_durations = form.getlist("lesson_durations[]")
+        lesson_free_previews = form.getlist("lesson_free_previews[]")
+
+        # Initialize content service
+        content_service = ContentService()
+
+        # Track current lesson index
+        lesson_index = 0
+
+        # Create modules and their lessons
+        for i in range(len(module_titles)):
+            if module_titles[i].strip():  # Only create module if title is not empty
+                # Create module
+                module_data = {
+                    "course_id": course.id,
+                    "title": module_titles[i],
+                    "description": module_descriptions[i] if i < len(module_descriptions) else "",
+                    "order": i + 1
+                }
+                module = await content_service.create_module(module_data)
+
+                # Count lessons in this module
+                module_lesson_count = 0
+
+                # Find lessons for this module
+                while lesson_index < len(lesson_titles):
+                    if lesson_titles[lesson_index].strip():  # Only create lesson if title is not empty
+                        # Create lesson
+                        lesson_data = {
+                            "module_id": module.id,
+                            "title": lesson_titles[lesson_index],
+                            "description": lesson_descriptions[lesson_index] if lesson_index < len(lesson_descriptions) else "",
+                            "content_type": lesson_content_types[lesson_index] if lesson_index < len(lesson_content_types) else "text",
+                            "content": lesson_contents[lesson_index] if lesson_index < len(lesson_contents) else "",
+                            "duration_minutes": int(lesson_durations[lesson_index]) if lesson_index < len(lesson_durations) and lesson_durations[lesson_index] else None,
+                            "is_free_preview": str(lesson_index) in lesson_free_previews,
+                            "order": module_lesson_count + 1
+                        }
+                        await content_service.create_lesson(lesson_data)
+                        module_lesson_count += 1
+
+                    lesson_index += 1
+
+                    # If we've reached the end of this module's lessons or processed at least one lesson
+                    # and there are more modules to process, break to the next module
+                    if (module_lesson_count > 0 and i < len(module_titles) - 1 and 
+                        lesson_index < len(lesson_titles) - 1 and 
+                        lesson_titles[lesson_index + 1].strip() and
+                        module_titles[i + 1].strip()):
+                        break
+
+        # Redirect to my-lessons page
+        return RedirectResponse(url="/my-lessons", status_code=303)
+    except HTTPException as e:
+        # Handle errors
+        return templates.TemplateResponse("courses/create_course.html", {
+            "request": request,
+            "user": user,
+            "error": e.detail,
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except Exception as e:
+        # Handle unexpected errors
+        return templates.TemplateResponse("courses/create_course.html", {
+            "request": request,
+            "user": user,
+            "error": str(e),
+            "featured_courses": [],
+            "trending_courses": []
+        })
 
 
 @app.post("/create-lesson", response_class=HTMLResponse)
