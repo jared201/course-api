@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}My Lessons | Aralify Online Course Platform{% endblock %}
+{% block title %}My Courses | Aralify Online Course Platform{% endblock %}
 
-{% block meta_description %}View and manage your created lessons. Create new content and track student progress.{% endblock %}
+{% block meta_description %}View and manage your created courses. Create new courses and track student progress.{% endblock %}
 
-{% block meta_keywords %}instructor lessons, course content, teaching materials, online education{% endblock %}
+{% block meta_keywords %}instructor courses, course content, teaching materials, online education{% endblock %}
 
 {% block og_url %}https://aralify.com/my-lessons{% endblock %}
 
-{% block og_title %}My Lessons | Aralify Online Course Platform{% endblock %}
+{% block og_title %}My Courses | Aralify Online Course Platform{% endblock %}
 
 {% block content %}
 <div class="columns">
@@ -25,8 +25,8 @@
                 Instructor
             </p>
             <ul class="menu-list">
-                <li><a href="/my-lessons" class="is-active">My Lessons</a></li>
-                <li><a href="/create-lesson">Create New Lesson</a></li>
+                <li><a href="/my-lessons" class="is-active">My Courses</a></li>
+                <li><a href="/create-course">Create New Course</a></li>
             </ul>
             <p class="menu-label">
                 Account
@@ -40,26 +40,29 @@
 
     <!-- Main Content -->
     <div class="column is-9">
-        <h3 class="title is-3 mb-4">My Lessons</h3>
+        <h3 class="title is-3 mb-4">My Courses</h3>
 
-        <!-- Lessons Section -->
+        <!-- Courses Section -->
         <div class="section">
-            {% if lessons %}
-                <div id="lessons-list" class="stack-layout">
-                    {% for lesson in lessons %}
-                        <div class="lesson-item card mb-4" data-lesson-id="{{ lesson.id }}">
+            {% if courses %}
+                <div id="courses-list" class="stack-layout">
+                    {% for course in courses %}
+                        <div class="course-item card mb-4" data-course-id="{{ course.id }}">
                             <div class="card-content">
                                 <div class="columns">
                                     <div class="column is-12">
-                                        <p class="title is-5">{{ lesson.title }}</p>
-                                        <p class="subtitle is-6 has-text-grey">{{ lesson.content_type }}</p>
+                                        <p class="title is-5">{{ course.title }}</p>
+                                        <p class="subtitle is-6 has-text-grey">{{ course.level }}</p>
                                         <div class="content">
-                                            <p>{{ lesson.description }}</p>
+                                            <p>{{ course.description }}</p>
                                             <p>
-                                                <strong>Created on:</strong> {{ lesson.created_at.strftime('%B %d, %Y') }}
+                                                <strong>Created on:</strong> {{ course.created_at.strftime('%B %d, %Y') }}
                                             </p>
                                             <p>
-                                                <strong>Duration:</strong> {{ lesson.duration_minutes }} minutes
+                                                <strong>Price:</strong> ${{ course.price }}
+                                            </p>
+                                            <p>
+                                                <strong>Status:</strong> {{ course.status }}
                                             </p>
                                         </div>
                                     </div>
@@ -67,10 +70,10 @@
                             </div>
                             <div class="card-footer">
                                 <div class="card-footer-item">
-                                    <button onclick="editLesson('{{ lesson.id }}')" class="button is-primary">Edit Lesson</button>
+                                    <button onclick="editCourse('{{ course.id }}')" class="button is-primary">Edit Course</button>
                                 </div>
                                 <div class="card-footer-item">
-                                    <button onclick="viewLessonStats('{{ lesson.id }}')" class="button is-info">View Stats</button>
+                                    <button onclick="viewCourseStats('{{ course.id }}')" class="button is-info">View Stats</button>
                                 </div>
                             </div>
                         </div>
@@ -78,7 +81,7 @@
                 </div>
             {% else %}
                 <div class="notification is-info">
-                    <p>No lessons created. Click on "Create New Lesson" to get started.</p>
+                    <p>No courses created. Click on "Create New Course" to get started.</p>
                 </div>
             {% endif %}
         </div>
@@ -86,14 +89,14 @@
 </div>
 
 <script>
-    function editLesson(lessonId) {
-        // Redirect to the lesson edit page
-        window.location.href = `/lessons/${lessonId}/edit`;
+    function editCourse(courseId) {
+        // Redirect to the course edit page
+        window.location.href = `/courses/${courseId}/edit`;
     }
 
-    function viewLessonStats(lessonId) {
-        // Redirect to the lesson statistics page
-        window.location.href = `/lessons/${lessonId}/stats`;
+    function viewCourseStats(courseId) {
+        // Redirect to the course statistics page
+        window.location.href = `/courses/${courseId}/stats`;
     }
 </script>
 {% endblock %}
