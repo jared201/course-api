@@ -1065,12 +1065,16 @@ async def my_lessons(request: Request, response: Response):
             return RedirectResponse(url="/", status_code=303)
 
         # In a real implementation, you would fetch the instructor's lessons
-        # For now, we'll just display a placeholder message
-        return templates.TemplateResponse("base.html", {
+        # For now, we'll just use an empty list to demonstrate the "No lessons created" notification
+        lessons = []
+
+        # You would typically get lessons from a service like this:
+        # lessons = await content_service.get_instructor_lessons(user.id)
+
+        return templates.TemplateResponse("my_lessons.html", {
             "request": request,
             "user": user,
-            "title": "My Lessons",
-            "message": "Your lessons will be displayed here.",
+            "lessons": lessons,
             "featured_courses": [],
             "trending_courses": []
         })
