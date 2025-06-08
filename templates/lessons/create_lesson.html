@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Lesson | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}Create a new lesson for your course. Add content, topics, and resources for your students.{% endblock %}
+
+{% block meta_keywords %}create lesson, course content, teaching materials, online education{% endblock %}
+
+{% block og_url %}https://aralify.com/create-lesson{% endblock %}
+
+{% block og_title %}Create New Lesson | Aralify Online Course Platform{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <!-- Left Sidebar -->
+    <div class="column is-3">
+        <aside class="menu dashboard-sidebar">
+            <p class="menu-label">
+                Dashboard
+            </p>
+            <ul class="menu-list">
+                <li><a href="/dashboard">Overview</a></li>
+            </ul>
+            <p class="menu-label">
+                Instructor
+            </p>
+            <ul class="menu-list">
+                <li><a href="/my-lessons">My Lessons</a></li>
+                <li><a href="/create-lesson" class="is-active">Create New Lesson</a></li>
+            </ul>
+            <p class="menu-label">
+                Account
+            </p>
+            <ul class="menu-list">
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/settings">Settings</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <!-- Main Content -->
+    <div class="column is-9">
+        <h3 class="title is-3 mb-4">Create New Lesson</h3>
+
+        <!-- Lesson Form -->
+        <div class="section">
+            <form id="lessonForm" method="POST" action="/create-lesson" enctype="multipart/form-data">
+                <!-- Basic Information -->
+                <div class="field">
+                    <label class="label">Module</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="module_id" required>
+                                <option value="" disabled selected>Select a module</option>
+                                {% for module in modules %}
+                                <option value="{{ module.id }}">{{ module.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Lesson Title</label>
+                    <div class="control">
+                        <input class="input" type="text" name="title" placeholder="Enter lesson title" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Description</label>
+                    <div class="control">
+                        <textarea class="textarea" name="description" placeholder="Enter lesson description" required></textarea>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Content Type</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="content_type" id="contentType" required>
+                                <option value="" disabled selected>Select content type</option>
+                                <option value="video">Video</option>
+                                <option value="text">Text</option>
+                                <option value="quiz">Quiz</option>
+                                <option value="assignment">Assignment</option>
+                                <option value="file">File</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Fields (will show/hide based on content type) -->
+                <div id="videoContent" class="content-field" style="display: none;">
+                    <div class="field">
+                        <label class="label">Video URL</label>
+                        <div class="control">
+                            <input class="input" type="url" name="video_url" placeholder="Enter video URL">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Duration (minutes)</label>
+                        <div class="control">
+                            <input class="input" type="number" name="duration_minutes" placeholder="Enter duration in minutes">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="textContent" class="content-field" style="display: none;">
+                    <div class="field">
+                        <label class="label">Text Content</label>
+                        <div class="control">
+                            <textarea class="textarea" name="text_content" placeholder="Enter text content"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="quizContent" class="content-field" style="display: none;">
+                    <div class="field">
+                        <label class="label">Quiz Questions</label>
+                        <div id="quizQuestions">
+                            <div class="box quiz-question">
+                                <div class="field">
+                                    <label class="label">Question</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="quiz_questions[]" placeholder="Enter question">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Options (one per line)</label>
+                                    <div class="control">
+                                        <textarea class="textarea" name="quiz_options[]" placeholder="Enter options, one per line"></textarea>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Correct Answer</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="quiz_answers[]" placeholder="Enter correct answer">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <button type="button" id="addQuizQuestion" class="button is-info is-small">Add Another Question</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="assignmentContent" class="content-field" style="display: none;">
+                    <div class="field">
+                        <label class="label">Assignment Instructions</label>
+                        <div class="control">
+                            <textarea class="textarea" name="assignment_instructions" placeholder="Enter assignment instructions"></textarea>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Due Date</label>
+                        <div class="control">
+                            <input class="input" type="date" name="assignment_due_date">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fileContent" class="content-field" style="display: none;">
+                    <div class="field">
+                        <label class="label">File Upload</label>
+                        <div class="file has-name is-fullwidth">
+                            <label class="file-label">
+                                <input class="file-input" type="file" name="file_upload">
+                                <span class="file-cta">
+                                    <span class="file-icon">
+                                        <i class="fas fa-upload"></i>
+                                    </span>
+                                    <span class="file-label">
+                                        Choose a file…
+                                    </span>
+                                </span>
+                                <span class="file-name">
+                                    No file selected
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course Topics Section -->
+                <div class="field">
+                    <label class="label">Course Topics</label>
+                    <div id="topicsContainer">
+                        <div class="box topic-item">
+                            <div class="field">
+                                <label class="label">Topic Title</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="topic_titles[]" placeholder="Enter topic title" required>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Topic Content</label>
+                                <div class="control">
+                                    <textarea class="textarea" name="topic_contents[]" placeholder="Enter topic content" required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="control">
+                            <button type="button" id="addTopic" class="button is-info is-small">Add Another Topic</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Section -->
+                <div class="field">
+                    <label class="label">Lesson Image</label>
+                    <div class="field has-addons">
+                        <div class="control is-expanded">
+                            <input class="input" type="url" name="image_url" placeholder="Enter image URL">
+                        </div>
+                        <div class="control">
+                            <a class="button is-info">
+                                URL
+                            </a>
+                        </div>
+                    </div>
+                    <p class="help">Or upload an image:</p>
+                    <div class="file has-name is-fullwidth">
+                        <label class="file-label">
+                            <input class="file-input" type="file" name="image_upload" accept="image/*">
+                            <span class="file-cta">
+                                <span class="file-icon">
+                                    <i class="fas fa-upload"></i>
+                                </span>
+                                <span class="file-label">
+                                    Choose an image…
+                                </span>
+                            </span>
+                            <span class="file-name">
+                                No file selected
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Additional Fields -->
+                <div class="field">
+                    <label class="label">Order</label>
+                    <div class="control">
+                        <input class="input" type="number" name="order" placeholder="Enter lesson order" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <label class="checkbox">
+                            <input type="checkbox" name="is_free_preview">
+                            Make this lesson available as a free preview
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">Submit Lesson</button>
+                    </div>
+                    <div class="control">
+                        <a href="/my-lessons" class="button is-light">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show/hide content fields based on selected content type
+    document.getElementById('contentType').addEventListener('change', function() {
+        // Hide all content fields
+        document.querySelectorAll('.content-field').forEach(field => {
+            field.style.display = 'none';
+        });
+        
+        // Show the selected content field
+        const contentType = this.value;
+        if (contentType === 'video') {
+            document.getElementById('videoContent').style.display = 'block';
+        } else if (contentType === 'text') {
+            document.getElementById('textContent').style.display = 'block';
+        } else if (contentType === 'quiz') {
+            document.getElementById('quizContent').style.display = 'block';
+        } else if (contentType === 'assignment') {
+            document.getElementById('assignmentContent').style.display = 'block';
+        } else if (contentType === 'file') {
+            document.getElementById('fileContent').style.display = 'block';
+        }
+    });
+
+    // Add another quiz question
+    document.getElementById('addQuizQuestion').addEventListener('click', function() {
+        const quizQuestions = document.getElementById('quizQuestions');
+        const newQuestion = document.createElement('div');
+        newQuestion.className = 'box quiz-question';
+        newQuestion.innerHTML = `
+            <div class="field">
+                <label class="label">Question</label>
+                <div class="control">
+                    <input class="input" type="text" name="quiz_questions[]" placeholder="Enter question">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Options (one per line)</label>
+                <div class="control">
+                    <textarea class="textarea" name="quiz_options[]" placeholder="Enter options, one per line"></textarea>
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Correct Answer</label>
+                <div class="control">
+                    <input class="input" type="text" name="quiz_answers[]" placeholder="Enter correct answer">
+                </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                    <button type="button" class="button is-danger is-small remove-question">Remove Question</button>
+                </div>
+            </div>
+        `;
+        quizQuestions.appendChild(newQuestion);
+        
+        // Add event listener to the remove button
+        newQuestion.querySelector('.remove-question').addEventListener('click', function() {
+            quizQuestions.removeChild(newQuestion);
+        });
+    });
+
+    // Add another topic
+    document.getElementById('addTopic').addEventListener('click', function() {
+        const topicsContainer = document.getElementById('topicsContainer');
+        const newTopic = document.createElement('div');
+        newTopic.className = 'box topic-item';
+        newTopic.innerHTML = `
+            <div class="field">
+                <label class="label">Topic Title</label>
+                <div class="control">
+                    <input class="input" type="text" name="topic_titles[]" placeholder="Enter topic title" required>
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Topic Content</label>
+                <div class="control">
+                    <textarea class="textarea" name="topic_contents[]" placeholder="Enter topic content" required></textarea>
+                </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                    <button type="button" class="button is-danger is-small remove-topic">Remove Topic</button>
+                </div>
+            </div>
+        `;
+        topicsContainer.appendChild(newTopic);
+        
+        // Add event listener to the remove button
+        newTopic.querySelector('.remove-topic').addEventListener('click', function() {
+            topicsContainer.removeChild(newTopic);
+        });
+    });
+
+    // Update file name display when a file is selected
+    document.querySelectorAll('.file-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const fileName = this.files[0] ? this.files[0].name : 'No file selected';
+            this.closest('.file').querySelector('.file-name').textContent = fileName;
+        });
+    });
+</script>
+{% endblock %}
