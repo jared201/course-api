@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Create New Course | Aralify Online Course Platform{% endblock %}
+{% block title %}{% if is_edit %}Edit Course{% else %}Create New Course{% endif %} | Aralify Online Course Platform{% endblock %}
 
-{% block meta_description %}Create a new course. Add course details, modules, and structure your curriculum for students.{% endblock %}
+{% block meta_description %}{% if is_edit %}Edit your course details, modules, and curriculum.{% else %}Create a new course. Add course details, modules, and structure your curriculum for students.{% endif %}{% endblock %}
 
-{% block meta_keywords %}create course, new course, online education, course builder, instructor{% endblock %}
+{% block meta_keywords %}{% if is_edit %}edit course, update course{% else %}create course, new course{% endif %}, online education, course builder, instructor{% endblock %}
 
-{% block og_url %}https://aralify.com/create-course{% endblock %}
+{% block og_url %}https://aralify.com/{% if is_edit %}edit-course/{{ course.id }}{% else %}create-course{% endif %}{% endblock %}
 
-{% block og_title %}Create New Course | Aralify Online Course Platform{% endblock %}
+{% block og_title %}{% if is_edit %}Edit Course{% else %}Create New Course{% endif %} | Aralify Online Course Platform{% endblock %}
 
 {% block content %}
 <div class="columns">
@@ -25,20 +25,21 @@
 
     <!-- Main Content -->
     <div class="column is-9">
-        <h3 class="title is-3 mb-4">Create New Course</h3>
+        <h3 class="title is-3 mb-4">{% if is_edit %}Edit Course{% else %}Create New Course{% endif %}</h3>
         <div class="section">
             <form id="courseForm" method="POST" action="/create-course" enctype="multipart/form-data">
                 <!-- Basic Information -->
                 <div class="field">
                     <label class="label">Course Title</label>
                     <div class="control">
-                        <input class="input" type="text" name="title" placeholder="Enter course title" required>
+                        <input class="input" type="text" name="title" placeholder="Enter course title" required
+                               value="{% if is_edit %}{{ course.title }}{% endif %}">
                     </div>
                 </div>
                 <div class="field">
                     <label class="label">Description</label>
                     <div class="control">
-                        <textarea class="textarea" name="description" placeholder="Enter course description" required></textarea>
+                        <textarea class="textarea" name="description" placeholder="Enter course description" required>{% if is_edit %}{{ course.description }}{% endif %}</textarea>
                     </div>
                 </div>
                 <div class="field">
@@ -57,25 +58,35 @@
                 <div class="field">
                     <label class="label">Tags</label>
                     <div class="control">
-                        <input class="input" type="text" name="tags" placeholder="Comma-separated tags (e.g. Python, Web, Data)">
+                        <input class="input" type="text" name="tags" placeholder="Comma-separated tags (e.g. Python, Web, Data)"
+                               value="{% if is_edit %}{{ course.tags|join(', ') }}{% endif %}">
                     </div>
                 </div>
                 <div class="field">
                     <label class="label">Price (USD)</label>
                     <div class="control">
-                        <input class="input" type="number" name="price" min="0" step="0.01" placeholder="Enter price (0 for free)" required>
+                        <input class="input" type="number" name="price" min="0" step="0.01" placeholder="Enter price (0 for free)" required
+                               value="{% if is_edit %}{{ course.price }}{% endif %}">
                     </div>
                 </div>
                 <div class="field">
                     <label class="label">Thumbnail Image URL</label>
                     <div class="control">
-                        <input class="input" type="url" name="thumbnail_url" placeholder="Enter image URL">
+                        <input class="input" type="url" name="thumbnail_url" placeholder="Enter image URL"
+                               value="{% if is_edit and course.thumbnail_url %}{{ course.thumbnail_url }}{% endif %}">
                     </div>
+                </div>
+                <div class="field">
+                    <label class="label">Hours</label>
+                    <div class="control">
+                        <input class="input" type="number" name="duration" min="0" step="0.1" placeholder="Enter total course hours"
+                               value="{% if is_edit %}{{ course.duration }}{% endif %}">
                 </div>
                 <div class="field">
                     <label class="label">Start Date</label>
                     <div class="control">
-                        <input class="input" type="date" name="start_date">
+                        <input class="input" type="date" name="start_date"
+                               value="{% if is_edit and course.start_date %}{{ course.start_date.strftime('%Y-%m-%d') }}{% endif %}">
                     </div>
                 </div>
                 <div class="field">
@@ -172,9 +183,16 @@
                     </div>
                 </div>
 
+                {% if is_edit %}
+                <!-- Hidden field for course_id when editing -->
+                <input type="hidden" name="course_id" value="{{ course.id }}">
+                {% endif %}
+
                 <div class="field is-grouped mt-5">
                     <div class="control">
-                        <button type="submit" class="button is-primary">Create Course</button>
+                        <button type="submit" class="button is-primary">
+                            {% if is_edit %}Save Course{% else %}Create Course{% endif %}
+                        </button>
                     </div>
                     <div class="control">
                         <a href="/my-courses" class="button is-light">Cancel</a>

@@ -1139,11 +1139,52 @@ async def create_course_form(request: Request, response: Response):
             "request": request,
             "user": user,
             "featured_courses": [],
-            "trending_courses": []
+            "trending_courses": [],
+            "is_edit": False,
+            "course": None
         })
     except HTTPException:
         # User is not authenticated, redirect to login
         return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/edit-course/{course_id}", response_class=HTMLResponse)
+async def edit_course_form(course_id: int, request: Request, response: Response):
+    """Render the edit course form."""
+    try:
+        user = await get_current_user_from_cookie(request, response)
+
+        # Check if user is an instructor
+        if user.role != UserRole.INSTRUCTOR:
+            return RedirectResponse(url="/", status_code=303)
+
+        # Get the course
+        course = await course_service.get_course(course_id)
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+
+        # Check if the user is the instructor of this course
+        if course.instructor_id != user.id:
+            raise HTTPException(status_code=403, detail="You are not authorized to edit this course")
+
+        return templates.TemplateResponse("courses/create_course.html", {
+            "request": request,
+            "user": user,
+            "featured_courses": [],
+            "trending_courses": [],
+            "is_edit": True,
+            "course": course
+        })
+    except HTTPException as e:
+        if e.status_code == 404:
+            # Course not found
+            return RedirectResponse(url="/my-courses", status_code=303)
+        elif e.status_code == 403:
+            # Not authorized
+            return RedirectResponse(url="/my-courses", status_code=303)
+        else:
+            # User is not authenticated, redirect to login
+            return RedirectResponse(url="/login", status_code=303)
 
 
 @app.post("/create-course", response_class=HTMLResponse)
@@ -1158,8 +1199,9 @@ async def create_course_submit(
     thumbnail_url: Optional[str] = Form(None),
     start_date: Optional[str] = Form(None),
     status: str = Form("pending"),
+    course_id: Optional[int] = Form(None),
 ):
-    """Handle course form submission."""
+    """Handle course form submission for both creation and updates."""
     try:
         user = await get_current_user_from_cookie(request, response)
 
@@ -1192,8 +1234,22 @@ async def create_course_submit(
             "status": status
         }
 
-        # Create the course
-        course = await course_service.create_course(course_data)
+        # Check if this is an update or a new course
+        if course_id:
+            # Get the existing course
+            existing_course = await course_service.get_course(course_id)
+            if not existing_course:
+                raise HTTPException(status_code=404, detail="Course not found")
+
+            # Check if the user is the instructor of this course
+            if existing_course.instructor_id != user.id:
+                raise HTTPException(status_code=403, detail="You are not authorized to edit this course")
+
+            # Update the course
+            course = await course_service.update_course(course_id, course_data)
+        else:
+            # Create a new course
+            course = await course_service.create_course(course_data)
 
         # Process module and lesson data
         form = await request.form()

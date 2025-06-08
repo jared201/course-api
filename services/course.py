@@ -25,16 +25,42 @@ class Course(BaseModel):
     instructor_id: int
     level: CourseLevel = CourseLevel.BEGINNER
     price: float = 0.0
+    duration: float = 0.0
     status: CourseStatus = CourseStatus.PENDING
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
     start_date: Optional[datetime] = None
     tags: List[str] = []
+    modules: List['Module'] = []
     thumbnail_url: Optional[str] = None
+
 
     class Config:
         orm_mode = True
 
+class Module(BaseModel):
+    id: Optional[int] = None
+    course_id: int
+    title: str
+    description: str
+    order: int = 0
+    created_at: datetime = datetime.now()
+    updated_at: datetime = datetime.now()
+    lessons: List['Lesson'] = []
+    class Config:
+        orm_mode = True
+
+class Lesson(BaseModel):
+    id: Optional[int] = None
+    module_id: int
+    title: str
+    content: str
+    order: int = 0
+    created_at: datetime = datetime.now()
+    updated_at: datetime = datetime.now()
+
+    class Config:
+        orm_mode = True
 
 class CourseService:
     """Service for managing courses in the online course platform."""
@@ -105,8 +131,56 @@ class CourseService:
 
     async def update_course(self, course_id: int, course_data: dict) -> Optional[Course]:
         """Update a course's information."""
-        # In a real implementation, this would update in a database
-        return None
+        # Get the existing course
+        existing_course = await self.get_course(course_id)
+        if not existing_course:
+            return None
+
+        # Update the course with new data
+        existing_dict = existing_course.dict()
+        for key, value in course_data.items():
+            if key in existing_dict:
+                # Handle enum conversions
+                if key == "level" and isinstance(value, str):
+                    try:
+                        existing_dict[key] = CourseLevel(value.lower())
+                    except Exception as e:
+                        print(f"Error converting level to Enum: {e}")
+                elif key == "status" and isinstance(value, str):
+                    try:
+                        existing_dict[key] = CourseStatus(value.lower())
+                    except Exception as e:
+                        print(f"Error converting status to Enum: {e}")
+                else:
+                    existing_dict[key] = value
+
+        # Update the updated_at timestamp
+        existing_dict["updated_at"] = datetime.now()
+
+        # Create updated course object
+        updated_course = Course(**existing_dict)
+
+        # Save to Redis
+        if self.redis_manager and self.redis_manager.is_connected():
+            try:
+                # Convert datetime objects to strings for JSON serialization
+                course_dict = updated_course.dict()
+                course_dict["created_at"] = course_dict["created_at"].isoformat()
+                course_dict["updated_at"] = course_dict["updated_at"].isoformat()
+                if course_dict["start_date"]:
+                    course_dict["start_date"] = course_dict["start_date"].isoformat()
+
+                # Store updated course
+                course_key = f"course:{updated_course.id}"
+                result = self.redis_manager.set(course_key, json.dumps(course_dict))
+                if not result:
+                    print(f"Failed to update course {updated_course.id} in Redis!")
+                else:
+                    print(f"Course {updated_course.id} updated in Redis")
+            except Exception as e:
+                print(f"Error updating course in Redis: {e}")
+
+        return updated_course
 
     async def delete_course(self, course_id: int) -> bool:
         """Delete a course."""
