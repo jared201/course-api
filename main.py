@@ -1064,17 +1064,217 @@ async def my_lessons(request: Request, response: Response):
         if user.role != UserRole.INSTRUCTOR:
             return RedirectResponse(url="/", status_code=303)
 
-        # In a real implementation, you would fetch the instructor's lessons
-        # For now, we'll just use an empty list to demonstrate the "No lessons created" notification
-        lessons = []
+        # Get instructor's lessons from Redis
+        instructor_lessons_key = f"instructor:{user.id}:lessons"
+        lesson_ids = redis_manager.smembers(instructor_lessons_key)
 
-        # You would typically get lessons from a service like this:
-        # lessons = await content_service.get_instructor_lessons(user.id)
+        lessons = []
+        if lesson_ids:
+            for lesson_id in lesson_ids:
+                lesson = await content_service.get_lesson(int(lesson_id))
+                if lesson:
+                    # Convert Pydantic model to dict for template
+                    lesson_dict = lesson.dict()
+                    lessons.append(lesson_dict)
+
+        # Sort lessons by created_at (newest first)
+        lessons.sort(key=lambda x: x["created_at"], reverse=True)
 
         return templates.TemplateResponse("my_lessons.html", {
             "request": request,
             "user": user,
             "lessons": lessons,
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except HTTPException:
+        # User is not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/create-lesson", response_class=HTMLResponse)
+async def create_lesson_form(request: Request, response: Response):
+    """Render the create lesson form."""
+    try:
+        user = await get_current_user_from_cookie(request, response)
+
+        # Check if user is an instructor
+        if user.role != UserRole.INSTRUCTOR:
+            return RedirectResponse(url="/", status_code=303)
+
+        # Get modules for the dropdown
+        # In a real implementation, you would fetch modules from a database
+        # For now, we'll use sample modules
+        modules = [
+            {
+                "id": 1,
+                "title": "Introduction to Programming"
+            },
+            {
+                "id": 2,
+                "title": "Core Concepts"
+            },
+            {
+                "id": 3,
+                "title": "Advanced Topics"
+            }
+        ]
+
+        return templates.TemplateResponse("lessons/create_lesson.html", {
+            "request": request,
+            "user": user,
+            "modules": modules,
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except HTTPException:
+        # User is not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=303)
+
+
+@app.post("/create-lesson", response_class=HTMLResponse)
+async def create_lesson(
+    request: Request,
+    response: Response,
+    module_id: int = Form(...),
+    title: str = Form(...),
+    description: str = Form(...),
+    content_type: str = Form(...),
+    order: int = Form(...),
+    is_free_preview: bool = Form(False),
+    image_url: Optional[str] = Form(None),
+    duration_minutes: Optional[int] = Form(None),
+    topic_titles: List[str] = Form([]),
+    topic_contents: List[str] = Form([])
+):
+    """Handle lesson form submission."""
+    try:
+        user = await get_current_user_from_cookie(request, response)
+
+        # Check if user is an instructor
+        if user.role != UserRole.INSTRUCTOR:
+            return RedirectResponse(url="/", status_code=303)
+
+        # Process content based on content_type
+        content = ""
+        form = await request.form()
+
+        if content_type == "video":
+            content = form.get("video_url", "")
+        elif content_type == "text":
+            content = form.get("text_content", "")
+        elif content_type == "quiz":
+            # Process quiz questions
+            quiz_questions = form.getlist("quiz_questions[]")
+            quiz_options = form.getlist("quiz_options[]")
+            quiz_answers = form.getlist("quiz_answers[]")
+
+            quiz_data = []
+            for i in range(len(quiz_questions)):
+                if i < len(quiz_questions) and quiz_questions[i]:
+                    options = quiz_options[i].split('\n') if i < len(quiz_options) else []
+                    answer = quiz_answers[i] if i < len(quiz_answers) else ""
+                    quiz_data.append({
+                        "question": quiz_questions[i],
+                        "options": options,
+                        "answer": answer
+                    })
+
+            content = json.dumps(quiz_data)
+        elif content_type == "assignment":
+            instructions = form.get("assignment_instructions", "")
+            due_date = form.get("assignment_due_date", "")
+            content = json.dumps({
+                "instructions": instructions,
+                "due_date": due_date
+            })
+        elif content_type == "file":
+            # In a real implementation, you would upload the file to a storage service
+            # and store the URL in content
+            content = "file_url_placeholder"
+
+        # Process image
+        image = ""
+        if image_url:
+            image = image_url
+        elif "image_upload" in form:
+            # In a real implementation, you would upload the image to a storage service
+            # and store the URL in image
+            image = "image_url_placeholder"
+
+        # Process topics
+        topics = []
+        for i in range(len(topic_titles)):
+            if i < len(topic_titles) and topic_titles[i]:
+                topic_content = topic_contents[i] if i < len(topic_contents) else ""
+                topics.append({
+                    "title": topic_titles[i],
+                    "content": topic_content
+                })
+
+        # Create lesson data
+        lesson_data = {
+            "module_id": module_id,
+            "title": title,
+            "description": description,
+            "content_type": content_type,
+            "content": content,
+            "duration_minutes": duration_minutes,
+            "order": order,
+            "is_free_preview": is_free_preview,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "image": image,
+            "topics": topics
+        }
+
+        # Save lesson to Redis
+        lesson_id = int(datetime.now().timestamp())  # Generate a unique ID
+        lesson_key = f"lesson:{lesson_id}"
+
+        # Convert datetime objects to strings for JSON serialization
+        lesson_data_copy = lesson_data.copy()
+        lesson_data_copy["created_at"] = lesson_data_copy["created_at"].isoformat()
+        lesson_data_copy["updated_at"] = lesson_data_copy["updated_at"].isoformat()
+
+        # Store lesson in Redis
+        redis_manager.set(lesson_key, json.dumps(lesson_data_copy))
+
+        # Add lesson ID to module's lessons set
+        module_lessons_key = f"module:{module_id}:lessons"
+        redis_manager.sadd(module_lessons_key, lesson_id)
+
+        # Add lesson ID to instructor's lessons set
+        instructor_lessons_key = f"instructor:{user.id}:lessons"
+        redis_manager.sadd(instructor_lessons_key, lesson_id)
+
+        # Redirect to my lessons page
+        return RedirectResponse(url="/my-lessons", status_code=303)
+    except Exception as e:
+        # Handle errors
+        print(f"Error creating lesson: {e}")
+
+        # Get modules for the dropdown (same as in GET route)
+        modules = [
+            {
+                "id": 1,
+                "title": "Introduction to Programming"
+            },
+            {
+                "id": 2,
+                "title": "Core Concepts"
+            },
+            {
+                "id": 3,
+                "title": "Advanced Topics"
+            }
+        ]
+
+        return templates.TemplateResponse("lessons/create_lesson.html", {
+            "request": request,
+            "user": user if 'user' in locals() else None,
+            "modules": modules,
+            "error": str(e),
             "featured_courses": [],
             "trending_courses": []
         })
