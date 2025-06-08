@@ -12,6 +12,7 @@ class CourseLevel(str, Enum):
 
 
 class CourseStatus(str, Enum):
+    PENDING = "pending"
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
@@ -24,7 +25,7 @@ class Course(BaseModel):
     instructor_id: int
     level: CourseLevel = CourseLevel.BEGINNER
     price: float = 0.0
-    status: CourseStatus = CourseStatus.DRAFT
+    status: CourseStatus = CourseStatus.PENDING
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
     start_date: Optional[datetime] = None
@@ -46,7 +47,32 @@ class CourseService:
     async def create_course(self, course_data: dict) -> Course:
         """Create a new course."""
         course = Course(**course_data)
-        # In a real implementation, this would save to a database
+
+        # Save to Redis if Redis manager is available
+        if self.redis_manager and self.redis_manager.is_connected():
+            try:
+                # Generate a unique ID if not provided
+                if course.id is None:
+                    course.id = int(datetime.now().timestamp())
+
+                # Convert datetime objects to strings for JSON serialization
+                course_dict = course.dict()
+                course_dict["created_at"] = course_dict["created_at"].isoformat()
+                course_dict["updated_at"] = course_dict["updated_at"].isoformat()
+                if course_dict["start_date"]:
+                    course_dict["start_date"] = course_dict["start_date"].isoformat()
+
+                # Store individual course
+                course_key = f"course:{course.id}"
+                self.redis_manager.set(course_key, json.dumps(course_dict))
+
+                # Add to all courses set
+                self.redis_manager.sadd("all_courses", course.id)
+
+                print(f"Course {course.id} saved to Redis")
+            except Exception as e:
+                print(f"Error saving course to Redis: {e}")
+
         return course
 
     async def get_course(self, course_id: int) -> Optional[Course]:
