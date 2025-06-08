@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}My Lessons | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}View and manage your created lessons. Create new content and track student progress.{% endblock %}
+
+{% block meta_keywords %}instructor lessons, course content, teaching materials, online education{% endblock %}
+
+{% block og_url %}https://aralify.com/my-lessons{% endblock %}
+
+{% block og_title %}My Lessons | Aralify Online Course Platform{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <!-- Left Sidebar -->
+    <div class="column is-3">
+        <aside class="menu dashboard-sidebar">
+            <p class="menu-label">
+                Dashboard
+            </p>
+            <ul class="menu-list">
+                <li><a href="/dashboard">Overview</a></li>
+            </ul>
+            <p class="menu-label">
+                Instructor
+            </p>
+            <ul class="menu-list">
+                <li><a href="/my-lessons" class="is-active">My Lessons</a></li>
+                <li><a href="/create-lesson">Create New Lesson</a></li>
+            </ul>
+            <p class="menu-label">
+                Account
+            </p>
+            <ul class="menu-list">
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/settings">Settings</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <!-- Main Content -->
+    <div class="column is-9">
+        <h3 class="title is-3 mb-4">My Lessons</h3>
+
+        <!-- Lessons Section -->
+        <div class="section">
+            {% if lessons %}
+                <div id="lessons-list" class="stack-layout">
+                    {% for lesson in lessons %}
+                        <div class="lesson-item card mb-4" data-lesson-id="{{ lesson.id }}">
+                            <div class="card-content">
+                                <div class="columns">
+                                    <div class="column is-12">
+                                        <p class="title is-5">{{ lesson.title }}</p>
+                                        <p class="subtitle is-6 has-text-grey">{{ lesson.content_type }}</p>
+                                        <div class="content">
+                                            <p>{{ lesson.description }}</p>
+                                            <p>
+                                                <strong>Created on:</strong> {{ lesson.created_at.strftime('%B %d, %Y') }}
+                                            </p>
+                                            <p>
+                                                <strong>Duration:</strong> {{ lesson.duration_minutes }} minutes
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="card-footer-item">
+                                    <button onclick="editLesson('{{ lesson.id }}')" class="button is-primary">Edit Lesson</button>
+                                </div>
+                                <div class="card-footer-item">
+                                    <button onclick="viewLessonStats('{{ lesson.id }}')" class="button is-info">View Stats</button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="notification is-info">
+                    <p>No lessons created. Click on "Create New Lesson" to get started.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function editLesson(lessonId) {
+        // Redirect to the lesson edit page
+        window.location.href = `/lessons/${lessonId}/edit`;
+    }
+
+    function viewLessonStats(lessonId) {
+        // Redirect to the lesson statistics page
+        window.location.href = `/lessons/${lessonId}/stats`;
+    }
+</script>
+{% endblock %}
