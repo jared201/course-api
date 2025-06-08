@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Course | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}Create a new course. Add course details, modules, and structure your curriculum for students.{% endblock %}
+
+{% block meta_keywords %}create course, new course, online education, course builder, instructor{% endblock %}
+
+{% block og_url %}https://aralify.com/create-course{% endblock %}
+
+{% block og_title %}Create New Course | Aralify Online Course Platform{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <!-- Left Sidebar -->
+    <div class="column is-3">
+        <aside class="menu dashboard-sidebar">
+            <p class="menu-label">Instructor</p>
+            <ul class="menu-list">
+                <li><a href="/my-courses">My Courses</a></li>
+                <li><a href="/create-course" class="is-active">Create New Course</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <!-- Main Content -->
+    <div class="column is-9">
+        <h3 class="title is-3 mb-4">Create New Course</h3>
+        <div class="section">
+            <form id="courseForm" method="POST" action="/create-course" enctype="multipart/form-data">
+                <!-- Basic Information -->
+                <div class="field">
+                    <label class="label">Course Title</label>
+                    <div class="control">
+                        <input class="input" type="text" name="title" placeholder="Enter course title" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Description</label>
+                    <div class="control">
+                        <textarea class="textarea" name="description" placeholder="Enter course description" required></textarea>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Level</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="level" required>
+                                <option value="" disabled selected>Select level</option>
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Tags</label>
+                    <div class="control">
+                        <input class="input" type="text" name="tags" placeholder="Comma-separated tags (e.g. Python, Web, Data)">
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Price (USD)</label>
+                    <div class="control">
+                        <input class="input" type="number" name="price" min="0" step="0.01" placeholder="Enter price (0 for free)" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Thumbnail Image URL</label>
+                    <div class="control">
+                        <input class="input" type="url" name="thumbnail_url" placeholder="Enter image URL">
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Start Date</label>
+                    <div class="control">
+                        <input class="input" type="date" name="start_date">
+                    </div>
+                </div>
+                <!-- Modules Section (optional, can be added after course creation) -->
+                <div class="field is-grouped mt-5">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">Create Course</button>
+                    </div>
+                    <div class="control">
+                        <a href="/my-courses" class="button is-light">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
