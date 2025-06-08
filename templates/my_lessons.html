@@ -44,7 +44,7 @@
 
         <!-- Courses Section -->
         <div class="section">
-            {% if courses %}
+            {% if courses and courses|length > 0 %}
                 <div id="courses-list" class="stack-layout">
                     {% for course in courses %}
                         <div class="course-item card mb-4" data-course-id="{{ course.id }}">
@@ -80,8 +80,8 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="notification is-info">
-                    <p>No courses created. Click on "Create New Course" to get started.</p>
+                <div class="notification is-warning has-text-centered">
+                    <strong>No courses found.</strong> You have not created any courses yet.
                 </div>
             {% endif %}
         </div>

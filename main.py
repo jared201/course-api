@@ -1064,14 +1064,11 @@ async def my_lessons(request: Request, response: Response):
         if user.role != UserRole.INSTRUCTOR:
             return RedirectResponse(url="/", status_code=303)
 
-        # Get instructor's courses
+        # Get instructor's courses from Redis
         courses = await course_service.get_instructor_courses(user.id)
 
         # Convert Pydantic models to dicts for template
-        course_dicts = []
-        for course in courses:
-            course_dict = course.dict()
-            course_dicts.append(course_dict)
+        course_dicts = [course.dict() for course in courses]
 
         # Sort courses by created_at (newest first)
         course_dicts.sort(key=lambda x: x["created_at"], reverse=True)
@@ -1159,7 +1156,8 @@ async def create_course_submit(
     price: float = Form(0.0),
     tags: str = Form(""),
     thumbnail_url: Optional[str] = Form(None),
-    start_date: Optional[str] = Form(None)
+    start_date: Optional[str] = Form(None),
+    status: str = Form("pending"),
 ):
     """Handle course form submission."""
     try:
@@ -1168,6 +1166,15 @@ async def create_course_submit(
         # Check if user is an instructor
         if user.role != UserRole.INSTRUCTOR:
             return RedirectResponse(url="/", status_code=303)
+
+        # Parse start_date string to datetime if provided
+        from datetime import datetime
+        parsed_start_date = None
+        if start_date:
+            try:
+                parsed_start_date = datetime.fromisoformat(start_date)
+            except Exception as e:
+                print(f"Invalid start_date format: {start_date} - {e}")
 
         # Process tags (convert comma-separated string to list)
         tags_list = [tag.strip() for tag in tags.split(",")] if tags else []
@@ -1180,8 +1187,9 @@ async def create_course_submit(
             "price": price,
             "tags": tags_list,
             "thumbnail_url": thumbnail_url,
-            "start_date": start_date,
-            "instructor_id": user.id
+            "start_date": parsed_start_date,
+            "instructor_id": user.id,
+            "status": status
         }
 
         # Create the course
