@@ -31,7 +31,6 @@ class Course(BaseModel):
     updated_at: datetime = datetime.now()
     start_date: Optional[datetime] = None
     tags: List[str] = []
-    modules: List['Module'] = []
     thumbnail_url: Optional[str] = None
 
 
@@ -46,7 +45,6 @@ class Module(BaseModel):
     order: int = 0
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
-    lessons: List['Lesson'] = []
     class Config:
         orm_mode = True
 

@@ -47,19 +47,90 @@ class ContentService:
 
     # Module methods
     async def create_module(self, module_data: dict) -> Module:
-        """Create a new module."""
+        """Create a new module and save to Redis."""
+        from services.redis_manager import RedisManager
+        import json
+        from datetime import datetime
+
         module = Module(**module_data)
-        # In a real implementation, this would save to a database
+        if not module.id:
+            module.id = int(datetime.now().timestamp())
+
+        # Convert datetime objects to strings for JSON serialization
+        module_dict = module.dict()
+        module_dict["created_at"] = module_dict["created_at"].isoformat()
+        module_dict["updated_at"] = module_dict["updated_at"].isoformat()
+
+        redis_manager = RedisManager()
+        module_key = f"module:{module.id}"
+        redis_manager.set(module_key, json.dumps(module_dict))
+
+        # Add module ID to course's modules set
+        course_modules_key = f"course:{module.course_id}:modules"
+        redis_manager.sadd(course_modules_key, module.id)
+
         return module
 
     async def get_module(self, module_id: int) -> Optional[Module]:
         """Get a module by ID."""
         # In a real implementation, this would fetch from a database
+        from services.redis_manager import RedisManager
+        import json
+        redis_manager = RedisManager()
+        module_key = f"module:{module_id}"
+        module_json = redis_manager.get(module_key)
+        if module_json:
+            try:
+                module_dict = json.loads(module_json)
+                # Convert string dates back to datetime objects
+                module_dict["created_at"] = datetime.fromisoformat(module_dict["created_at"])
+                module_dict["updated_at"] = datetime.fromisoformat(module_dict["updated_at"])
+                return Module(**module_dict)
+            except Exception as e:
+                print(f"Error parsing module data: {e}")
+
         return None
+    async def get_modules_by_course_id(self, course_id: int) -> List[Module]:
+        """Get all modules for a specific course."""
+        # In a real implementation, this would fetch from a database
+        from services.redis_manager import RedisManager
+        redis_manager = RedisManager()
+        course_modules_key = f"course:{course_id}:modules"
+        module_ids = redis_manager.smembers(course_modules_key)
+        if not module_ids:
+            return []
+        modules = []
+        for module_id in module_ids:
+            module = await self.get_module(int(module_id))
+            if module:
+                modules.append(module)
+        # Sort modules by order
+        modules.sort(key=lambda x: x.order)
+
+        return modules
 
     async def update_module(self, module_id: int, module_data: dict) -> Optional[Module]:
         """Update a module's information."""
         # In a real implementation, this would update in a database
+        from services.redis_manager import RedisManager
+        import json
+        redis_manager = RedisManager()
+        module_key = f"module:{module_id}"
+        module_json = redis_manager.get(module_key)
+        if module_json:
+            try:
+                module_dict = json.loads(module_json)
+                # Update fields
+                for key, value in module_data.items():
+                    if key in module_dict:
+                        module_dict[key] = value
+                # Convert datetime objects to strings for JSON serialization
+                module_dict["updated_at"] = datetime.now().isoformat()
+                redis_manager.set(module_key, json.dumps(module_dict))
+                return Module(**module_dict)
+            except Exception as e:
+                print(f"Error updating module data: {e}")
+
         return None
 
     async def delete_module(self, module_id: int) -> bool:
@@ -70,6 +141,20 @@ class ContentService:
     async def list_course_modules(self, course_id: int) -> List[Module]:
         """List all modules for a specific course."""
         # In a real implementation, this would fetch from a database
+        from services.redis_manager import RedisManager
+        redis_manager = RedisManager()
+        course_modules_key = f"course:{course_id}:modules"
+        module_ids = redis_manager.smembers(course_modules_key)
+        if not module_ids:
+            return []
+        modules = []
+        for module_id in module_ids:
+            module = await self.get_module(int(module_id))
+            if module:
+                modules.append(module)
+        # Sort modules by order
+        modules.sort(key=lambda x: x.order)
+
         return []
 
     async def reorder_modules(self, course_id: int, module_order: List[Dict[str, int]]) -> List[Module]:
@@ -183,3 +268,23 @@ class ContentService:
         """Reorder lessons within a module."""
         # In a real implementation, this would update lesson orders in a database
         return []
+
+    async def get_lessons_by_module_id(self, param: int) -> List[Lesson]:
+        """Get all lessons for a specific module."""
+        # In a real implementation, this would fetch from a database
+
+        from services.redis_manager import RedisManager
+        redis_manager = RedisManager()
+        module_lessons_key = f"module:{param}:lessons"
+        lesson_ids = redis_manager.smembers(module_lessons_key)
+        if not lesson_ids:
+            return []
+        lessons = []
+        for lesson_id in lesson_ids:
+            lesson = await self.get_lesson(int(lesson_id))
+            if lesson:
+                lessons.append(lesson)
+        # Sort lessons by order
+        lessons.sort(key=lambda x: x.order)
+        return lessons
+
