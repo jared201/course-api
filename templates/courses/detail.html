@@ -85,7 +85,13 @@
                             <strong>Instructor:</strong> {{ course.instructor.full_name }}
                         </li>
                         <li class="py-2 has-border-bottom">
-                            <strong>Duration:</strong> {{ course.duration }} hours
+                            <strong>Duration:</strong>
+                            {% if course.duration %}
+                                {{ course.duration }} hours
+                            {% else %}
+                                Duration not available
+                            {% endif %}
+
                         </li>
                         <li class="py-2 has-border-bottom">
                             <strong>Price:</strong> 

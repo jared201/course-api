@@ -448,70 +448,87 @@ async def get_course_ui(request: Request, response: Response, course_id: int):
 
     # Convert Pydantic model to dict for template
     course = course.dict()
-
+    # Get modules and lessons for the course
+    modules = await content_service.get_modules_by_course_id(course_id)
+    if modules is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Modules not found for this course",
+        )
+    # Convert modules to dicts
+    modules = [module.dict() for module in modules]
+    # Convert lessons in each module to dicts
+    for module in modules:
+        lessons = await content_service.get_lessons_by_module_id(module["id"])
+        if lessons is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lessons not found for module {module['id']}",
+            )
+        module["lessons"] = [lesson.dict() for lesson in lessons]
     # Generate sample modules and lessons for the course
-    modules = [
-        {
-            "id": 1,
-            "course_id": course_id,
-            "title": "Introduction to " + course["title"],
-            "description": "Get started with the basics of " + course["title"],
-            "order": 1,
-            "lessons": [
-                {
-                    "id": 1,
-                    "module_id": 1,
-                    "title": "Welcome to the Course",
-                    "description": "Introduction to the course",
-                    "content_type": ContentType.VIDEO,
-                    "content": "https://example.com/video1.mp4",
-                    "duration_minutes": 10,
-                    "order": 1,
-                    "is_free_preview": True
-                },
-                {
-                    "id": 2,
-                    "module_id": 1,
-                    "title": "Course Overview",
-                    "description": "Overview of what you'll learn",
-                    "content_type": ContentType.TEXT,
-                    "content": "This is the course overview text content.",
-                    "order": 2,
-                    "is_free_preview": True
-                }
-            ]
-        },
-        {
-            "id": 2,
-            "course_id": course_id,
-            "title": "Core Concepts",
-            "description": "Learn the fundamental concepts of " + course["title"],
-            "order": 2,
-            "lessons": [
-                {
-                    "id": 3,
-                    "module_id": 2,
-                    "title": "Key Principles",
-                    "description": "Understanding the key principles",
-                    "content_type": ContentType.VIDEO,
-                    "content": "https://example.com/video2.mp4",
-                    "duration_minutes": 15,
-                    "order": 1,
-                    "is_free_preview": False
-                },
-                {
-                    "id": 4,
-                    "module_id": 2,
-                    "title": "Practice Quiz",
-                    "description": "Test your knowledge",
-                    "content_type": ContentType.QUIZ,
-                    "content": "{'questions': [...]}",  # JSON string for quiz questions
-                    "order": 2,
-                    "is_free_preview": False
-                }
-            ]
-        }
-    ]
+    # modules = [
+    #     {
+    #         "id": 1,
+    #         "course_id": course_id,
+    #         "title": "Introduction to " + course["title"],
+    #         "description": "Get started with the basics of " + course["title"],
+    #         "order": 1,
+    #         "lessons": [
+    #             {
+    #                 "id": 1,
+    #                 "module_id": 1,
+    #                 "title": "Welcome to the Course",
+    #                 "description": "Introduction to the course",
+    #                 "content_type": ContentType.VIDEO,
+    #                 "content": "https://example.com/video1.mp4",
+    #                 "duration_minutes": 10,
+    #                 "order": 1,
+    #                 "is_free_preview": True
+    #             },
+    #             {
+    #                 "id": 2,
+    #                 "module_id": 1,
+    #                 "title": "Course Overview",
+    #                 "description": "Overview of what you'll learn",
+    #                 "content_type": ContentType.TEXT,
+    #                 "content": "This is the course overview text content.",
+    #                 "order": 2,
+    #                 "is_free_preview": True
+    #             }
+    #         ]
+    #     },
+    #     {
+    #         "id": 2,
+    #         "course_id": course_id,
+    #         "title": "Core Concepts",
+    #         "description": "Learn the fundamental concepts of " + course["title"],
+    #         "order": 2,
+    #         "lessons": [
+    #             {
+    #                 "id": 3,
+    #                 "module_id": 2,
+    #                 "title": "Key Principles",
+    #                 "description": "Understanding the key principles",
+    #                 "content_type": ContentType.VIDEO,
+    #                 "content": "https://example.com/video2.mp4",
+    #                 "duration_minutes": 15,
+    #                 "order": 1,
+    #                 "is_free_preview": False
+    #             },
+    #             {
+    #                 "id": 4,
+    #                 "module_id": 2,
+    #                 "title": "Practice Quiz",
+    #                 "description": "Test your knowledge",
+    #                 "content_type": ContentType.QUIZ,
+    #                 "content": "{'questions': [...]}",  # JSON string for quiz questions
+    #                 "order": 2,
+    #                 "is_free_preview": False
+    #             }
+    #         ]
+    #     }
+    # ]
 
     # Add modules to the course
     course_with_modules = course.copy()
@@ -524,9 +541,32 @@ async def get_course_ui(request: Request, response: Response, course_id: int):
         "email": f"instructor{course['instructor_id']}@example.com",
         "bio": "Experienced instructor with expertise in this subject."
     }
+    # Get the actual instructor from the user service
+    instructor = await user_service.get_user(course["instructor_id"])
+    if instructor:
+        course_with_modules["instructor"]["full_name"] = instructor.full_name
+        course_with_modules["instructor"]["email"] = instructor.email
+        #course_with_modules["instructor"]["bio"] = instructor.bio
+    else:
+        # If instructor not found, use mock data
+        course_with_modules["instructor"]["full_name"] = f"Instructor {course['instructor_id']}"
+        course_with_modules["instructor"]["email"] = f"instructor{course['instructor_id']}@example.com"
+        course_with_modules["instructor"]["bio"] = "Experienced instructor with expertise in this subject."
 
-    # Add duration information
-    course_with_modules["duration"] = 12  # Mock duration in hours
+
+    # Get the actual duration from the modules and lessons
+    total_duration = 0
+    for module in course_with_modules["modules"]:
+        for lesson in module["lessons"]:
+            if lesson["duration_minutes"]:
+                total_duration += lesson["duration_minutes"]
+
+    # round up the minutes to the nearest hour
+    if total_duration % 60 != 0:
+        total_duration += (60 - (total_duration % 60))
+
+    course_with_modules["duration"] = total_duration / 60  # Convert to hours
+
 
     # Add enrolled_students field
     course_with_modules["enrolled_students"] = []  # Empty list by default
@@ -1200,6 +1240,9 @@ async def create_course_submit(
     start_date: Optional[str] = Form(None),
     status: str = Form("pending"),
     course_id: Optional[int] = Form(None),
+    duration: Optional[int] = Form(None),
+    is_free: bool = Form(False),
+
 ):
     """Handle course form submission for both creation and updates."""
     try:
@@ -1231,7 +1274,15 @@ async def create_course_submit(
             "thumbnail_url": thumbnail_url,
             "start_date": parsed_start_date,
             "instructor_id": user.id,
-            "status": status
+            "status": status,
+            "duration": duration,
+            "is_free": is_free,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "course_id": course_id,
+            "user": user.username,
+            "user_id": user.id,
+
         }
 
         # Check if this is an update or a new course
@@ -1273,6 +1324,7 @@ async def create_course_submit(
         lesson_index = 0
 
         # Create modules and their lessons
+        module_ids = []
         for i in range(len(module_titles)):
             if module_titles[i].strip():  # Only create module if title is not empty
                 # Create module
@@ -1282,9 +1334,9 @@ async def create_course_submit(
                     "description": module_descriptions[i] if i < len(module_descriptions) else "",
                     "order": i + 1
                 }
+                print(f"Creating module: {module_data}")
                 module = await content_service.create_module(module_data)
-
-                # Count lessons in this module
+                module_ids.append(module.id)
                 module_lesson_count = 0
 
                 # Find lessons for this module
