@@ -48,7 +48,13 @@
                 <div class="card-content">
                     <form id="settings-form">
                         <h3 class="title is-5 mb-4">Profile Settings</h3>
-                        
+
+                        <div class="field">
+                            <label class="label">Username</label>
+                            <div class="control">
+                                <input class="input" type="text" name="username" value="{{ user.username }}" readonly>
+                            </div>
+                        </div>
                         <div class="field">
                             <label class="label">Full Name</label>
                             <div class="control">
@@ -79,14 +85,18 @@
                                 <input class="input" type="password" name="new_password">
                             </div>
                         </div>
-                        
+
                         <div class="field">
                             <label class="label">Confirm New Password</label>
                             <div class="control">
                                 <input class="input" type="password" name="confirm_password">
                             </div>
                         </div>
-                        
+                        <div class="field mt-5">
+                            <label class="label">Bio</label>
+                            <div class="control">
+                                <textarea class="textarea" name="bio" placeholder="Tell us about yourself">{{ user.bio }}</textarea>
+                        </div>
                         <h3 class="title is-5 mt-5 mb-4">Notification Settings</h3>
                         
                         <div class="field">
@@ -121,6 +131,7 @@
                                 <button type="submit" class="button is-primary">Save Changes</button>
                             </div>
                         </div>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -132,7 +143,20 @@
     document.getElementById('settings-form').addEventListener('submit', function(e) {
         e.preventDefault();
         // In a real implementation, this would send the form data to the server
-        alert('Settings saved successfully!');
+        const formData = new FormData(this);
+        fetch('/settings/update_user', {
+            method: 'POST',
+            body: formData,
+        }).then(function(response) {
+            return response.json();
+        }).then(function(data) {
+            if (data.success) {
+                window.location.href = '/settings';
+            } else {
+                alert(data.message);
+            }
+        }
+        )
     });
 </script>
 {% endblock %}

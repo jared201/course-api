@@ -30,6 +30,7 @@ class User(BaseModel):
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
     is_active: bool = True
+    bio: Optional[str] = None
 
     class Config:
         orm_mode = True

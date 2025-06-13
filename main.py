@@ -296,6 +296,7 @@ class UserCreate(BaseModel):
     full_name: str
     password: str
     role: UserRole = UserRole.STUDENT
+    bio: Optional[str] = None
 
 
 @app.post("/users/", response_model=User)
@@ -742,6 +743,79 @@ async def register_ui(request: Request, response: Response):
         "featured_courses": featured_courses,
         "trending_courses": trending_courses
     })
+@app.post("/settings/update_user", response_class=HTMLResponse)
+async def update_user_settings(
+    request: Request,
+    username: str = Form(...),
+    email: str = Form(...),
+    full_name: str = Form(...),
+    password: Optional[str] = Form(None),
+    confirm_password: Optional[str] = Form(None),
+    bio: Optional[str] = Form(None),
+):
+    if password and confirm_password and password != confirm_password:
+        return templates.TemplateResponse("settings.html", {
+            "request": request,
+            "error": "Passwords do not match",
+            "username": username,
+            "email": email,
+            "full_name": full_name,
+            "bio": bio,
+            "featured_courses": featured_courses,
+            "trending_courses": trending_courses
+        })
+    # Get the current user from the cookie
+    response = RedirectResponse(url="/settings", status_code=303)
+    try:
+        user = await get_current_user_from_cookie(request, response)
+    except HTTPException:
+        return templates.TemplateResponse("settings.html", {
+            "request": request,
+            "error": "You must be logged in to update settings",
+            "featured_courses": featured_courses,
+            "trending_courses": trending_courses
+        })
+    # Prepare user data for update
+    user_data = {
+        "username": username,
+        "email": email,
+        "full_name": full_name,
+        "bio": bio
+    }
+    if password:
+        user_data["password"] = password
+    # Directly pass the dictionary to update_user method
+    try:
+        updated_user = await user_service.update_user(user.id, user_data)
+        # Update the cookie with the new token
+        user_token_data = {
+            "user_id": updated_user.id,
+            "username": updated_user.username,
+            "role": updated_user.role
+        }
+        #bypass token for now
+        token = await auth_service.create_access_token(data=user_token_data)
+
+        response.set_cookie(
+            key="access_token",
+            value=f"Bearer {token.access_token}",
+            httponly=True,
+            max_age=1800,  # 30 minutes
+            expires=token.expires_at.timestamp()
+        )
+
+        return response
+    except Exception as e:
+        return templates.TemplateResponse("settings.html", {
+            "request": request,
+            "error": str(e),
+            "username": username,
+            "email": email,
+            "full_name": full_name,
+            "bio": bio,
+            "featured_courses": featured_courses,
+            "trending_courses": trending_courses
+        })
 
 @app.post("/register", response_class=HTMLResponse)
 async def register_user(
@@ -751,7 +825,8 @@ async def register_user(
     full_name: str = Form(...),
     password: str = Form(...),
     confirm_password: str = Form(...),
-    role: str = Form(...)
+    role: str = Form(...),
+    bio: Optional[str] = Form(None),
 ):
     """Handle registration form submission."""
     # Check if passwords match
@@ -786,7 +861,8 @@ async def register_user(
             "email": email,
             "full_name": full_name,
             "password": password,
-            "role": role
+            "role": role,
+            "bio": bio
         }
         # Directly pass the dictionary to create_user method
         created_user = await user_service.create_user(user_data)
