@@ -1,7 +1,10 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, ForwardRef
 from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
+
+# Forward reference for Lesson to avoid circular import
+LessonRef = ForwardRef('Lesson')
 
 
 class ContentType(str, Enum):
@@ -20,6 +23,7 @@ class Module(BaseModel):
     order: int
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
+    lessons: List[LessonRef] = []
 
     class Config:
         orm_mode = True
@@ -40,6 +44,9 @@ class Lesson(BaseModel):
 
     class Config:
         orm_mode = True
+
+# Update forward references
+Module.update_forward_refs()
 
 
 class ContentService:
@@ -287,4 +294,3 @@ class ContentService:
         # Sort lessons by order
         lessons.sort(key=lambda x: x.order)
         return lessons
-

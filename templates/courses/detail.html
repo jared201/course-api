@@ -108,7 +108,9 @@
 
                     {% if user %}
                         {% if user.id in course.enrolled_students %}
-                            <a href="/courses/{{ course.id }}/modules/{{ course.modules[0].id }}/lessons/{{ course.modules[0].lessons[0].id }}" class="button is-success is-fullwidth">Continue Learning</a>
+                            <a href="/courses/{{ course.id }}/session" class="button is-success is-fullwidth">Continue Learning</a>
+                        {% elif user.role == 'instructor' and user.id == course.instructor_id %}
+                            <a href="/courses/{{ course.id }}/session" class="button is-info is-fullwidth">Preview Course</a>
                         {% else %}
                             <form action="/courses/{{ course.id }}/enroll" method="post">
                                 <button type="submit" class="button is-primary is-fullwidth">Enroll Now</button>
