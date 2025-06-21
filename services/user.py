@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 import uuid
 from services.redis_manager import RedisManager
+from passlib.context import CryptContext
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -39,6 +40,9 @@ class User(BaseModel):
 class UserService:
     """Service for managing users in the online course platform."""
 
+    # Password hashing context
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
     def __init__(self):
         """Initialize the UserService with Redis connection."""
         # Initialize the Redis manager
@@ -72,10 +76,11 @@ class UserService:
                 email_key = f"email:{user.email}"
                 self.redis_client.set(email_key, user.username)
 
-                # Store password if provided
+                # Store hashed password if provided
                 if password:
+                    hashed_password = self.pwd_context.hash(password)
                     password_key = f"user_password:{user.username}"
-                    self.redis_client.set(password_key, password)
+                    self.redis_client.set(password_key, hashed_password)
 
                 # Add to users set
                 self.redis_client.sadd("users", user.username)
@@ -143,10 +148,11 @@ class UserService:
             user_key = f"user:{updated_user.username}"
             self.redis_client.set(user_key, json.dumps(updated_user.dict(), cls=DateTimeEncoder))
 
-            # Update password if provided
+            # Update password if provided (with hashing)
             if password:
+                hashed_password = self.pwd_context.hash(password)
                 password_key = f"user_password:{updated_user.username}"
-                self.redis_client.set(password_key, password)
+                self.redis_client.set(password_key, hashed_password)
 
             return updated_user
         except Exception as e:
