@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} - {{ module.title }} - {{ lesson.title if lesson else "Course Session" }} | Aralify Online Course Platform{% endblock %}
+
+{% block meta_description %}{% if lesson %}{{ lesson.title }} - {{ lesson.content_type }} lesson from the {{ module.title }} module in {{ course.title }} course.{% else %}{{ course.description }}{% endif %}{% endblock %}
+
+{% block meta_keywords %}{{ course.title }}, {{ course.level }}, {% if module %}{{ module.title }},{% endif %} {% if lesson %}{{ lesson.title }}, {{ lesson.content_type }},{% endif %} {% for tag in course.tags %}{{ tag }}{% if not loop.last %}, {% endif %}{% endfor %}, online course, e-learning{% endblock %}
+
+{% block og_url %}https://aralify.com/courses/{{ course.id }}/session{% if module %}?module_id={{ module.id }}{% if lesson %}&lesson_id={{ lesson.id }}{% endif %}{% endif %}{% endblock %}
+
+{% block og_image %}{% if course.thumbnail_url %}{{ course.thumbnail_url }}{% else %}{{ super() }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <!-- Sidebar with course modules and lessons -->
+    <div class="column is-3">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-5">{{ course.title }}</p>
+                
+                <!-- Course progress if user is a student -->
+                {% if user and user.role == 'student' and is_enrolled %}
+                <div class="mb-3">
+                    <progress class="progress is-primary" value="{{ progress_percentage }}" max="100">{{ progress_percentage }}%</progress>
+                    <p class="has-text-centered">{{ progress_percentage }}% Complete</p>
+                </div>
+                {% endif %}
+                
+                <!-- Instructor preview mode notice -->
+                {% if user and user.role == 'instructor' and user.id == course.instructor_id %}
+                <div class="notification is-info is-light mb-3">
+                    <p>You are viewing this course as an instructor.</p>
+                </div>
+                {% endif %}
+                
+                <!-- Module and lesson navigation -->
+                <aside class="menu">
+                    <p class="menu-label">Modules</p>
+                    <ul class="menu-list">
+                        {% for mod in course.modules %}
+                        <li>
+                            <a href="javascript:void(0)" 
+                               class="{% if module and module.id == mod.id %}is-active{% endif %}"
+                               data-toggle="collapse" 
+                               href="#collapseModule{{ mod.id }}" 
+                               aria-expanded="{% if module and module.id == mod.id %}true{% else %}false{% endif %}" 
+                               aria-controls="collapseModule{{ mod.id }}">
+                                {{ mod.title }}
+                            </a>
+                            <ul id="collapseModule{{ mod.id }}" 
+                                class="collapse-content" 
+                                {% if module and module.id == mod.id %}
+                                style="display: block;"
+                                {% else %}
+                                style="display: none;"
+                                {% endif %}>
+                                {% for les in mod.lessons %}
+                                <li>
+                                    <a href="/courses/{{ course.id }}/session?module_id={{ mod.id }}&lesson_id={{ les.id }}"
+                                       class="{% if lesson and lesson.id == les.id %}is-active{% endif %}">
+                                        <span class="icon is-small">
+                                            {% if les.content_type == 'video' %}
+                                            <i class="fas fa-video"></i>
+                                            {% elif les.content_type == 'text' %}
+                                            <i class="fas fa-file-alt"></i>
+                                            {% elif les.content_type == 'quiz' %}
+                                            <i class="fas fa-question-circle"></i>
+                                            {% elif les.content_type == 'assignment' %}
+                                            <i class="fas fa-tasks"></i>
+                                            {% elif les.content_type == 'file' %}
+                                            <i class="fas fa-file-download"></i>
+                                            {% endif %}
+                                        </span>
+                                        {{ les.title }}
+                                        {% if les.is_free_preview %}
+                                        <span class="tag is-info is-light is-small">Preview</span>
+                                        {% endif %}
+                                        {% if completed_lessons and les.id in completed_lessons %}
+                                        <span class="tag is-success is-light is-small">Completed</span>
+                                        {% endif %}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </aside>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main content area -->
+    <div class="column is-9">
+        {% if not module or not lesson %}
+            <!-- Course overview when no module/lesson is selected -->
+            <div class="card">
+                <div class="card-content">
+                    <h1 class="title is-3">{{ course.title }}</h1>
+                    
+                    {% if course.thumbnail_url %}
+                    <div class="mb-4">
+                        <figure class="image is-16by9">
+                            <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
+                        </figure>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-4">
+                        <span class="tag is-primary">{{ course.level }}</span>
+                        {% for tag in course.tags %}
+                            <span class="tag is-light">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="title is-5">About this course</h5>
+                        <p>{{ course.description }}</p>
+                    </div>
+                    
+                    {% if course.modules and course.modules|length > 0 %}
+                    <div class="notification is-primary is-light">
+                        <p>Select a module from the sidebar to start learning.</p>
+                    </div>
+                    {% else %}
+                    <div class="notification is-warning is-light">
+                        <p>This course doesn't have any modules yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Lesson content when a module/lesson is selected -->
+            <div class="card">
+                <div class="card-content">
+                    <nav class="breadcrumb" aria-label="breadcrumbs">
+                        <ul>
+                            <li><a href="/courses/{{ course.id }}/session">{{ course.title }}</a></li>
+                            <li><a href="/courses/{{ course.id }}/session?module_id={{ module.id }}">{{ module.title }}</a></li>
+                            {% if lesson %}
+                            <li class="is-active"><a href="#" aria-current="page">{{ lesson.title }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    
+                    {% if lesson %}
+                        <h1 class="title is-3 mb-3">{{ lesson.title }}</h1>
+                        
+                        <div class="mb-4">
+                            <span class="tag is-primary">{{ lesson.content_type }}</span>
+                            {% if lesson.is_free_preview %}
+                            <span class="tag is-info">Preview</span>
+                            {% endif %}
+                            {% if completed_lessons and lesson.id in completed_lessons %}
+                            <span class="tag is-success">Completed</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Access control for non-enrolled users -->
+                        {% if not is_enrolled and not user.role == 'instructor' and not lesson.is_free_preview %}
+                            <div class="notification is-warning">
+                                <p>You need to enroll in this course to access this lesson.</p>
+                                <a href="/courses/{{ course.id }}" class="button is-primary mt-3">View Course Details</a>
+                            </div>
+                        {% else %}
+                            <!-- Lesson content based on type -->
+                            {% if lesson.content_type == 'video' %}
+                                <div class="mb-3" style="position: relative; padding-top: 56.25%;">
+                                    <iframe src="{{ lesson.content }}" title="{{ lesson.title }}" allowfullscreen 
+                                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"></iframe>
+                                </div>
+                            {% elif lesson.content_type == 'file' %}
+                                <div class="mb-3">
+                                    <a href="{{ lesson.content }}" class="button is-link" target="_blank">
+                                        <span class="icon">
+                                            <i class="fas fa-file-download"></i>
+                                        </span>
+                                        <span>Download File</span>
+                                    </a>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="lesson-content content">
+                                {{ lesson.content | safe }}
+                            </div>
+                            
+                            <!-- Mark as completed button for enrolled students -->
+                            {% if user and user.role == 'student' and is_enrolled and not completed_lessons or lesson.id not in completed_lessons %}
+                                <form action="/courses/{{ course.id }}/modules/{{ module.id }}/lessons/{{ lesson.id }}/complete" method="post" class="mb-4">
+                                    <button type="submit" class="button is-success">Mark as Completed</button>
+                                </form>
+                            {% endif %}
+                            
+                            <!-- Navigation buttons -->
+                            <div class="is-flex is-justify-content-space-between mt-5">
+                                {% if prev_lesson %}
+                                    <a href="/courses/{{ course.id }}/session?module_id={{ module.id }}&lesson_id={{ prev_lesson.id }}" class="button is-outlined is-primary">
+                                        &larr; Previous Lesson
+                                    </a>
+                                {% elif prev_module %}
+                                    <a href="/courses/{{ course.id }}/session?module_id={{ prev_module.id }}&lesson_id={{ prev_module_last_lesson.id }}" class="button is-outlined is-primary">
+                                        &larr; Previous Module
+                                    </a>
+                                {% else %}
+                                    <a href="/courses/{{ course.id }}/session" class="button is-outlined is-light">
+                                        &larr; Back to Course
+                                    </a>
+                                {% endif %}
+                                
+                                {% if next_lesson %}
+                                    <a href="/courses/{{ course.id }}/session?module_id={{ module.id }}&lesson_id={{ next_lesson.id }}" class="button is-outlined is-primary">
+                                        Next Lesson &rarr;
+                                    </a>
+                                {% elif next_module %}
+                                    <a href="/courses/{{ course.id }}/session?module_id={{ next_module.id }}&lesson_id={{ next_module_first_lesson.id }}" class="button is-outlined is-primary">
+                                        Next Module &rarr;
+                                    </a>
+                                {% else %}
+                                    <a href="/courses/{{ course.id }}/complete" class="button is-success">
+                                        Complete Course
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <!-- Module overview when only a module is selected -->
+                        <h1 class="title is-3 mb-3">{{ module.title }}</h1>
+                        <p>{{ module.description }}</p>
+                        
+                        <div class="notification is-primary is-light mt-4">
+                            <p>Select a lesson from the sidebar to start learning.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize collapsible modules
+        initializeCollapsibleModules();
+    });
+</script>
+{% endblock %}

@@ -685,6 +685,146 @@ async def login_ui(request: Request, response: Response):
     })
 
 
+@app.get("/courses/{course_id}/session", response_class=HTMLResponse)
+async def course_session(
+    request: Request, 
+    response: Response, 
+    course_id: int, 
+    module_id: Optional[int] = None, 
+    lesson_id: Optional[int] = None
+):
+    """
+    Render the course session page where instructors can preview lessons
+    and enrolled students can learn the course modules.
+    """
+    # Get the course
+    course = await course_service.get_course(course_id)
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    # Try to get the current user from cookie
+    user = None
+    try:
+        user = await get_current_user_from_cookie(request, response)
+    except HTTPException:
+        # User is not authenticated, continue without user
+        pass
+
+    # Check if user is enrolled or is the instructor
+    is_enrolled = False
+    if user:
+        if user.role == "instructor" and user.id == course.instructor_id:
+            # Instructor can always access their own courses
+            is_enrolled = True
+        else:
+            # Check if student is enrolled
+            is_enrolled = await enrollment_service.is_user_enrolled(user.id, course_id)
+
+    # Get all modules for the course
+    course_modules = await content_service.get_modules_by_course_id(course_id)
+
+    # Convert course to dict to add modules
+    course_dict = course.dict()
+    course_dict["modules"] = course_modules
+
+    # Get lessons for each module
+    for module in course_modules:
+        module.lessons = await content_service.get_lessons_by_module_id(module.id)
+
+    # Initialize variables
+    module = None
+    lesson = None
+    prev_lesson = None
+    next_lesson = None
+    prev_module = None
+    next_module = None
+    prev_module_last_lesson = None
+    next_module_first_lesson = None
+    completed_lessons = []
+    progress_percentage = 0
+
+    # If module_id is provided, get the module
+    if module_id and course_dict["modules"]:
+        for mod in course_dict["modules"]:
+            if mod.id == module_id:
+                module = mod
+                break
+
+        if not module:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Module not found",
+            )
+
+        # If lesson_id is provided, get the lesson
+        if lesson_id and module.lessons:
+            for les in module.lessons:
+                if les.id == lesson_id:
+                    lesson = les
+                    break
+
+            if not lesson:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Lesson not found",
+                )
+
+            # Determine previous and next lessons within the current module
+            current_lesson_index = module.lessons.index(lesson)
+            if current_lesson_index > 0:
+                prev_lesson = module.lessons[current_lesson_index - 1]
+            if current_lesson_index < len(module.lessons) - 1:
+                next_lesson = module.lessons[current_lesson_index + 1]
+
+            # If there's no previous/next lesson in the current module,
+            # check for previous/next modules
+            if not prev_lesson and course_dict["modules"]:
+                current_module_index = course_dict["modules"].index(module)
+                if current_module_index > 0:
+                    prev_module = course_dict["modules"][current_module_index - 1]
+                    if prev_module.lessons:
+                        prev_module_last_lesson = prev_module.lessons[-1]
+
+            if not next_lesson and course_dict["modules"]:
+                current_module_index = course_dict["modules"].index(module)
+                if current_module_index < len(course_dict["modules"]) - 1:
+                    next_module = course_dict["modules"][current_module_index + 1]
+                    if next_module.lessons:
+                        next_module_first_lesson = next_module.lessons[0]
+
+    # Get completed lessons for the user if they're enrolled
+    if user and is_enrolled and user.role == "student":
+        # In a real implementation, this would fetch from a progress service
+        # For now, we'll use an empty list
+        completed_lessons = []
+
+        # Calculate progress percentage
+        total_lessons = sum(len(mod.lessons) for mod in course_dict["modules"])
+        if total_lessons > 0:
+            progress_percentage = int(len(completed_lessons) / total_lessons * 100)
+
+    return templates.TemplateResponse("courses/session.html", {
+        "request": request,
+        "course": course_dict,
+        "module": module,
+        "lesson": lesson,
+        "is_enrolled": is_enrolled,
+        "completed_lessons": completed_lessons,
+        "progress_percentage": progress_percentage,
+        "prev_lesson": prev_lesson,
+        "next_lesson": next_lesson,
+        "prev_module": prev_module,
+        "next_module": next_module,
+        "prev_module_last_lesson": prev_module_last_lesson,
+        "next_module_first_lesson": next_module_first_lesson,
+        "featured_courses": featured_courses,
+        "trending_courses": trending_courses,
+        "user": user
+    })
+
 @app.get("/logout", response_class=HTMLResponse)
 async def logout(request: Request):
     """Log out the current user by clearing the cookie."""
