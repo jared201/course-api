@@ -60,8 +60,8 @@ class AuthService:
             password_key = f"user_password:{username}"
             stored_password = user_service.redis_client.get(password_key)
 
-            # Check if password matches
-            if stored_password and stored_password == password:
+            # Check if password matches using verification
+            if stored_password and user_service.pwd_context.verify(password, stored_password):
                 # Return user data for token creation
                 return {
                     "user_id": user.id,
@@ -188,10 +188,11 @@ class AuthService:
             password_key = f"user_password:{user.username}"
             stored_password = user_service.redis_client.get(password_key)
 
-            # Check if old password matches
-            if stored_password and stored_password == old_password:
-                # Update password
-                user_service.redis_client.set(password_key, new_password)
+            # Check if old password matches using verification
+            if stored_password and user_service.pwd_context.verify(old_password, stored_password):
+                # Update password with hashing
+                hashed_password = user_service.pwd_context.hash(new_password)
+                user_service.redis_client.set(password_key, hashed_password)
                 return True
         except Exception as e:
             print(f"Error changing password: {e}")
@@ -225,7 +226,8 @@ class AuthService:
 
         try:
             password_key = f"user_password:{username}"
-            user_service.redis_client.set(password_key, new_password)
+            hashed_password = user_service.pwd_context.hash(new_password)
+            user_service.redis_client.set(password_key, hashed_password)
             return True
         except Exception as e:
             print(f"Error resetting password: {e}")
