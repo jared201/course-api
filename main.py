@@ -1795,3 +1795,107 @@ async def settings(request: Request, response: Response):
     except HTTPException:
         # User is not authenticated, redirect to login
         return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_overview(request: Request, response: Response):
+    """Show the admin overview page."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request, response)
+
+        # Check if user is an admin
+        if user.role != UserRole.ADMIN:
+            return RedirectResponse(url="/", status_code=303)
+
+        # Get statistics
+        users = await user_service.list_users()
+        courses = await course_service.list_courses()
+
+        return templates.TemplateResponse("admin.html", {
+            "request": request,
+            "user": user,
+            "active_section": "overview",
+            "total_users": len(users),
+            "total_courses": len(courses),
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except HTTPException:
+        # User is not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users(request: Request, response: Response):
+    """Show the admin users statistics page."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request, response)
+
+        # Check if user is an admin
+        if user.role != UserRole.ADMIN:
+            return RedirectResponse(url="/", status_code=303)
+
+        # Get users
+        users = await user_service.list_users()
+
+        # Count users by role
+        student_count = sum(1 for u in users if u.role == UserRole.STUDENT)
+        instructor_count = sum(1 for u in users if u.role == UserRole.INSTRUCTOR)
+        admin_count = sum(1 for u in users if u.role == UserRole.ADMIN)
+
+        return templates.TemplateResponse("admin.html", {
+            "request": request,
+            "user": user,
+            "active_section": "users",
+            "users": users,
+            "total_users": len(users),
+            "student_count": student_count,
+            "instructor_count": instructor_count,
+            "admin_count": admin_count,
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except HTTPException:
+        # User is not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/admin/courses", response_class=HTMLResponse)
+async def admin_courses(request: Request, response: Response):
+    """Show the admin courses statistics page."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request, response)
+
+        # Check if user is an admin
+        if user.role != UserRole.ADMIN:
+            return RedirectResponse(url="/", status_code=303)
+
+        # Get courses
+        courses = await course_service.list_courses(filters={})
+
+        # Count courses by status
+        published_courses = sum(1 for c in courses if c.status == CourseStatus.PUBLISHED)
+        pending_courses = sum(1 for c in courses if c.status == CourseStatus.PENDING)
+
+        # Get instructor names for courses
+        for course in courses:
+            instructor = await user_service.get_user(course.instructor_id)
+            course.instructor_name = instructor.full_name if instructor else "Unknown"
+
+        return templates.TemplateResponse("admin.html", {
+            "request": request,
+            "user": user,
+            "active_section": "courses",
+            "courses": courses,
+            "total_courses": len(courses),
+            "published_courses": published_courses,
+            "pending_courses": pending_courses,
+            "featured_courses": [],
+            "trending_courses": []
+        })
+    except HTTPException:
+        # User is not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=303)

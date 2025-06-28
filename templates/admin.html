@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Aralify Online Course Platform{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <!-- Left sidebar -->
+    <div class="column is-one-quarter">
+        <aside class="menu">
+            <p class="menu-label">
+                Admin Panel
+            </p>
+            <ul class="menu-list">
+                <li><a href="/admin" class="{{ 'is-active' if active_section == 'overview' else '' }}">Overview</a></li>
+                <li><a href="/admin/users" class="{{ 'is-active' if active_section == 'users' else '' }}">Users Statistics</a></li>
+                <li><a href="/admin/courses" class="{{ 'is-active' if active_section == 'courses' else '' }}">Courses Statistics</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <!-- Main content -->
+    <div class="column">
+        <div class="content">
+            {% if active_section == 'overview' %}
+                <h1 class="title">Admin Dashboard</h1>
+                <p>Welcome to the admin dashboard. Use the sidebar to navigate to different sections.</p>
+                
+                <div class="columns">
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Total Users</p>
+                            <p class="title">{{ total_users }}</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Total Courses</p>
+                            <p class="title">{{ total_courses }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% elif active_section == 'users' %}
+                <h1 class="title">Users Statistics</h1>
+                
+                <div class="columns">
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Total Users</p>
+                            <p class="title">{{ total_users }}</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Students</p>
+                            <p class="title">{{ student_count }}</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Instructors</p>
+                            <p class="title">{{ instructor_count }}</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Admins</p>
+                            <p class="title">{{ admin_count }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h2 class="subtitle">User List</h2>
+                <table class="table is-fullwidth is-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.role }}</td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% elif active_section == 'courses' %}
+                <h1 class="title">Courses Statistics</h1>
+                
+                <div class="columns">
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Total Courses</p>
+                            <p class="title">{{ total_courses }}</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Published Courses</p>
+                            <p class="title">{{ published_courses }}</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="box has-text-centered">
+                            <p class="heading">Pending Courses</p>
+                            <p class="title">{{ pending_courses }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h2 class="subtitle">Course List</h2>
+                <table class="table is-fullwidth is-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Instructor</th>
+                            <th>Level</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr>
+                            <td>{{ course.id }}</td>
+                            <td>{{ course.title }}</td>
+                            <td>{{ course.instructor_name }}</td>
+                            <td>{{ course.level }}</td>
+                            <td>{{ course.status }}</td>
+                            <td>{{ course.created_at.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

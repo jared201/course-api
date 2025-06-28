@@ -53,6 +53,7 @@
                             {% endif %}
                             {% if user.role == "admin" %}
                                 <a class="navbar-item" href="javascript:void(0)" onclick="loadDashboardAsSPA(event)">Dashboard</a>
+                                <a class="navbar-item" href="/admin">Admin</a>
                             {% endif %}
                             <a class="navbar-item" href="/logout">Logout</a>
                         {% else %}
