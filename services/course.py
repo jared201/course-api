@@ -23,6 +23,7 @@ class Course(BaseModel):
     title: str
     description: str
     instructor_id: int
+    instructor_name: str = ""
     level: CourseLevel = CourseLevel.BEGINNER
     price: float = 0.0
     duration: float = 0.0
