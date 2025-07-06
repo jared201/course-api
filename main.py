@@ -16,6 +16,9 @@ from services import (
     Token, AuthService,
     Payment, PaymentStatus, PaymentMethod, PaymentService
 )
+
+# Import the EnhancedEnrollmentService for proper Redis-based enrollment management
+from test_complete_learning_flow import EnhancedEnrollmentService
 from services.redis_manager import RedisManager
 
 app = FastAPI(title="Online Course Platform API")
@@ -185,7 +188,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 user_service = UserService()
 course_service = CourseService(featured_courses=featured_courses, trending_courses=trending_courses, redis_manager=redis_manager)
 content_service = ContentService()
-enrollment_service = EnrollmentService()
+enrollment_service = EnhancedEnrollmentService(redis_manager)
 progress_service = ProgressService()
 auth_service = AuthService()
 payment_service = PaymentService()
@@ -1141,8 +1144,10 @@ async def get_trending_courses():
 
 
 @app.post("/courses/{course_id}/enroll")
-async def enroll_in_course(course_id: int, current_user: User = Depends(get_current_user)):
+async def enroll_in_course(course_id: int, request: Request, response: Response):
     """Enroll the current user in a course."""
+    # Get the current user from cookie
+    current_user = await get_current_user_from_cookie(request, response)
     # Check if the course exists
     course = await course_service.get_course(course_id)
     if course is None:
@@ -1154,14 +1159,14 @@ async def enroll_in_course(course_id: int, current_user: User = Depends(get_curr
     # Check if the user is already enrolled
     is_enrolled = await enrollment_service.is_user_enrolled(current_user.id, course_id)
     if is_enrolled:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is already enrolled in this course",
-        )
+        # If already enrolled, redirect to the session page
+        return RedirectResponse(url=f"/courses/{course_id}/session", status_code=303)
 
     # Enroll the user
     enrollment = await enrollment_service.enroll_user(current_user.id, course_id)
-    return {"status": "success", "message": "Successfully enrolled in the course"}
+
+    # Redirect to the session page
+    return RedirectResponse(url=f"/courses/{course_id}/session", status_code=303)
 
 
 @app.post("/admin/courses/move-to-redis")
@@ -1230,6 +1235,48 @@ async def move_courses_to_redis(current_user: User = Depends(get_current_user)):
             "featured_courses": len(featured_courses),
             "trending_courses": len(trending_courses),
             "total_courses": len(all_course_ids)
+        }
+    })
+
+
+@app.post("/admin/courses/create-sample-courses")
+async def create_sample_courses_endpoint(current_user: User = Depends(get_current_user)):
+    """
+    Create 10 sample courses with 3 modules and 3 lessons each.
+    This endpoint is for administrative purposes and should be called with caution.
+    """
+    # Check if user is an admin
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can perform this operation",
+        )
+
+    # Check if Redis is connected
+    if not redis_manager.is_connected():
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Redis connection is not available",
+        )
+
+    # Import the create_sample_courses function
+    from create_sample_courses import create_sample_courses, verify_enrollment_possible
+
+    # Create sample courses
+    await create_sample_courses()
+
+    # Verify enrollment is possible
+    await verify_enrollment_possible()
+
+    return JSONResponse(content={
+        "status": "success",
+        "message": "Sample courses created successfully",
+        "details": {
+            "courses_created": 10,
+            "modules_per_course": 3,
+            "lessons_per_module": 3,
+            "total_modules": 30,
+            "total_lessons": 90
         }
     })
 

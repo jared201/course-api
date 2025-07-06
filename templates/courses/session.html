@@ -17,7 +17,7 @@
         <div class="card">
             <div class="card-content">
                 <p class="title is-5">{{ course.title }}</p>
-                
+
                 <!-- Course progress if user is a student -->
                 {% if user and user.role == 'student' and is_enrolled %}
                 <div class="mb-3">
@@ -25,14 +25,14 @@
                     <p class="has-text-centered">{{ progress_percentage }}% Complete</p>
                 </div>
                 {% endif %}
-                
+
                 <!-- Instructor preview mode notice -->
                 {% if user and user.role == 'instructor' and user.id == course.instructor_id %}
                 <div class="notification is-info is-light mb-3">
                     <p>You are viewing this course as an instructor.</p>
                 </div>
                 {% endif %}
-                
+
                 <!-- Module and lesson navigation -->
                 <aside class="menu">
                     <p class="menu-label">Modules</p>
@@ -89,7 +89,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Main content area -->
     <div class="column is-9">
         {% if not module or not lesson %}
@@ -97,7 +97,7 @@
             <div class="card">
                 <div class="card-content">
                     <h1 class="title is-3">{{ course.title }}</h1>
-                    
+
                     {% if course.thumbnail_url %}
                     <div class="mb-4">
                         <figure class="image is-16by9">
@@ -105,23 +105,35 @@
                         </figure>
                     </div>
                     {% endif %}
-                    
+
                     <div class="mb-4">
                         <span class="tag is-primary">{{ course.level }}</span>
                         {% for tag in course.tags %}
                             <span class="tag is-light">{{ tag }}</span>
                         {% endfor %}
                     </div>
-                    
+
                     <div class="mb-4">
                         <h5 class="title is-5">About this course</h5>
                         <p>{{ course.description }}</p>
                     </div>
-                    
+
                     {% if course.modules and course.modules|length > 0 %}
                     <div class="notification is-primary is-light">
                         <p>Select a module from the sidebar to start learning.</p>
                     </div>
+
+                    {% if course.modules and course.modules[0].lessons and course.modules[0].lessons|length > 0 %}
+                    <div class="has-text-centered mt-4">
+                        <a href="/courses/{{ course.id }}/session?module_id={{ course.modules[0].id }}&lesson_id={{ course.modules[0].lessons[0].id }}" class="button is-primary is-large">
+                            <span class="icon">
+                                <i class="fas fa-play-circle"></i>
+                            </span>
+                            <span>Start Now</span>
+                        </a>
+                    </div>
+                    {% endif %}
+
                     {% else %}
                     <div class="notification is-warning is-light">
                         <p>This course doesn't have any modules yet.</p>
@@ -142,10 +154,10 @@
                             {% endif %}
                         </ul>
                     </nav>
-                    
+
                     {% if lesson %}
                         <h1 class="title is-3 mb-3">{{ lesson.title }}</h1>
-                        
+
                         <div class="mb-4">
                             <span class="tag is-primary">{{ lesson.content_type }}</span>
                             {% if lesson.is_free_preview %}
@@ -155,7 +167,7 @@
                             <span class="tag is-success">Completed</span>
                             {% endif %}
                         </div>
-                        
+
                         <!-- Access control for non-enrolled users -->
                         {% if not is_enrolled and not user.role == 'instructor' and not lesson.is_free_preview %}
                             <div class="notification is-warning">
@@ -179,18 +191,18 @@
                                     </a>
                                 </div>
                             {% endif %}
-                            
+
                             <div class="lesson-content content">
                                 {{ lesson.content | safe }}
                             </div>
-                            
+
                             <!-- Mark as completed button for enrolled students -->
                             {% if user and user.role == 'student' and is_enrolled and not completed_lessons or lesson.id not in completed_lessons %}
                                 <form action="/courses/{{ course.id }}/modules/{{ module.id }}/lessons/{{ lesson.id }}/complete" method="post" class="mb-4">
                                     <button type="submit" class="button is-success">Mark as Completed</button>
                                 </form>
                             {% endif %}
-                            
+
                             <!-- Navigation buttons -->
                             <div class="is-flex is-justify-content-space-between mt-5">
                                 {% if prev_lesson %}
@@ -206,7 +218,7 @@
                                         &larr; Back to Course
                                     </a>
                                 {% endif %}
-                                
+
                                 {% if next_lesson %}
                                     <a href="/courses/{{ course.id }}/session?module_id={{ module.id }}&lesson_id={{ next_lesson.id }}" class="button is-outlined is-primary">
                                         Next Lesson &rarr;
@@ -226,7 +238,7 @@
                         <!-- Module overview when only a module is selected -->
                         <h1 class="title is-3 mb-3">{{ module.title }}</h1>
                         <p>{{ module.description }}</p>
-                        
+
                         <div class="notification is-primary is-light mt-4">
                             <p>Select a lesson from the sidebar to start learning.</p>
                         </div>

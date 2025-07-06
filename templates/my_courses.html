@@ -82,7 +82,7 @@
                             </div>
                             <div class="card-footer">
                                 <div class="card-footer-item">
-                                    <button onclick="viewCourseAsSPA('{{ course.id }}')" class="button is-primary">Continue Learning</button>
+                                    <a href="/courses/{{ course.id }}/session" class="button is-primary">Continue Learning</a>
                                 </div>
                             </div>
                         </div>
@@ -136,7 +136,7 @@
                         </div>
                         <div class="card-footer">
                             <div class="card-footer-item">
-                                <button onclick="viewCourseAsSPA('{{ course.id }}')" class="button is-primary">Review Course</button>
+                                <a href="/courses/{{ course.id }}/session" class="button is-primary">Review Course</a>
                             </div>
                         </div>
                     </div>
@@ -159,6 +159,7 @@
             headers: {
                 'Content-Type': 'application/json',
             },
+            redirect: 'follow', // Follow redirects automatically
         })
         .then(response => {
             if (!response.ok) {
@@ -167,17 +168,40 @@
                     window.location.href = '/login';
                     return;
                 }
-                return response.json().then(data => {
-                    throw new Error(data.detail || 'Failed to enroll in course');
-                });
+                // Only try to parse JSON if the content type is application/json
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then(data => {
+                        throw new Error(data.detail || 'Failed to enroll in course');
+                    });
+                } else {
+                    throw new Error('Failed to enroll in course');
+                }
             }
-            return response.json();
+
+            // Check if we were redirected to the session page
+            if (response.url.includes('/session')) {
+                // Redirect was successful, go to the session page
+                window.location.href = response.url;
+                return;
+            }
+
+            // Only try to parse JSON if the content type is application/json
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                // Show success message and reload
+                return { success: true };
+            }
         })
         .then(data => {
-            // Show success message
-            alert('Successfully enrolled in the course!');
-            // Reload the page to reflect the changes
-            window.location.reload();
+            if (data) {
+                // Show success message
+                alert('Successfully enrolled in the course!');
+                // Reload the page to reflect the changes
+                window.location.reload();
+            }
         })
         .catch(error => {
             // Show error message
