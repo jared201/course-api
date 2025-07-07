@@ -32,6 +32,16 @@ redis_manager = RedisManager()
 # Add datetime.now function to templates
 from datetime import datetime
 
+# Add custom filters to Jinja2 environment
+import json
+def from_json(value):
+    try:
+        return json.loads(value)
+    except (ValueError, TypeError):
+        return {}
+
+templates.env.filters["from_json"] = from_json
+
 # Sample data for featured courses
 featured_courses = [
     {
@@ -1503,7 +1513,7 @@ async def create_course_submit(
     start_date: Optional[str] = Form(None),
     status: str = Form("pending"),
     course_id: Optional[int] = Form(None),
-    duration: Optional[int] = Form(None),
+    duration: Optional[float] = Form(None),
     is_free: bool = Form(False),
 
 ):
