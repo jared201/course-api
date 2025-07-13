@@ -43,11 +43,18 @@
                     <article class="media">
                         <div class="media-content">
                             <div class="content">
-                                <p class="title is-5 mb-2">
-                                    <a data-toggle="collapse" href="#collapse{{ module.id }}" role="button" aria-expanded="false" aria-controls="collapse{{ module.id }}">
-                                        {{ module.title }}
-                                    </a>
-                                </p>
+                                <div class="is-flex is-justify-content-space-between is-align-items-center">
+                                    <p class="title is-5 mb-2">
+                                        <a data-toggle="collapse" href="#collapse{{ module.id }}" role="button" aria-expanded="false" aria-controls="collapse{{ module.id }}">
+                                            {{ module.title }}
+                                        </a>
+                                    </p>
+                                    {% if user and (user.role == 'instructor' and user.id == course.instructor_id) or user.role == 'admin' %}
+                                    <button class="button is-small is-danger delete-module" data-course-id="{{ course.id }}" data-module-id="{{ module.id }}">
+                                        Delete Module
+                                    </button>
+                                    {% endif %}
+                                </div>
                                 <div id="collapse{{ module.id }}" class="collapse-content">
                                     <p>{{ module.description }}</p>
                                     <div class="menu">
@@ -58,7 +65,14 @@
                                                         <a href="/courses/{{ course.id }}/modules/{{ module.id }}/lessons/{{ lesson.id }}">
                                                             {{ lesson.title }}
                                                         </a>
-                                                        <span class="tag is-primary is-rounded">{{ lesson.content_type }}</span>
+                                                        <div>
+                                                            <span class="tag is-primary is-rounded">{{ lesson.content_type }}</span>
+                                                            {% if user and (user.role == 'instructor' and user.id == course.instructor_id) or user.role == 'admin' %}
+                                                            <button class="button is-small is-danger delete-lesson" data-course-id="{{ course.id }}" data-module-id="{{ module.id }}" data-lesson-id="{{ lesson.id }}">
+                                                                Delete
+                                                            </button>
+                                                            {% endif %}
+                                                        </div>
                                                     </div>
                                                 </li>
                                             {% endfor %}

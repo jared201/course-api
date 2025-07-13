@@ -679,6 +679,116 @@ async def get_lesson_ui(request: Request, response: Response, course_id: int, mo
         "user": user
     })
 
+@app.delete("/courses/{course_id}/modules/{module_id}")
+async def delete_module(request: Request, course_id: int, module_id: int):
+    """Delete a module and all its associated lessons."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request)
+        # Check if user is an instructor or admin
+        if user.role not in [UserRole.INSTRUCTOR, UserRole.ADMIN]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only instructors and admins can delete modules",
+            )
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    # Check if course exists
+    course = await course_service.get_course(course_id)
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    # Check if user is the course instructor or an admin
+    if user.role != UserRole.ADMIN and user.id != course.instructor_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the course instructor or admin can delete modules",
+        )
+
+    # Check if module exists
+    module = await content_service.get_module(module_id)
+    if module is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Module not found",
+        )
+
+    # Delete the module
+    success = await content_service.delete_module(module_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete module",
+        )
+
+    return {"message": "Module deleted successfully"}
+
+@app.delete("/courses/{course_id}/modules/{module_id}/lessons/{lesson_id}")
+async def delete_lesson(request: Request, course_id: int, module_id: int, lesson_id: int):
+    """Delete a lesson."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request)
+        # Check if user is an instructor or admin
+        if user.role not in [UserRole.INSTRUCTOR, UserRole.ADMIN]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only instructors and admins can delete lessons",
+            )
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    # Check if course exists
+    course = await course_service.get_course(course_id)
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    # Check if user is the course instructor or an admin
+    if user.role != UserRole.ADMIN and user.id != course.instructor_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the course instructor or admin can delete lessons",
+        )
+
+    # Check if module exists
+    module = await content_service.get_module(module_id)
+    if module is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Module not found",
+        )
+
+    # Check if lesson exists
+    lesson = await content_service.get_lesson(lesson_id)
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found",
+        )
+
+    # Delete the lesson
+    success = await content_service.delete_lesson(lesson_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete lesson",
+        )
+
+    return {"message": "Lesson deleted successfully"}
+
 @app.get("/login", response_class=HTMLResponse)
 async def login_ui(request: Request, response: Response):
     """Render the login page."""
