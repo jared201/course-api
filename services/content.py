@@ -162,7 +162,7 @@ class ContentService:
         # Sort modules by order
         modules.sort(key=lambda x: x.order)
 
-        return []
+        return modules
 
     async def reorder_modules(self, course_id: int, module_order: List[Dict[str, int]]) -> List[Module]:
         """Reorder modules within a course."""
