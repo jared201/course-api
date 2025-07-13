@@ -1747,12 +1747,70 @@ async def create_course_submit(
                     while lesson_index < len(lesson_titles):
                         if lesson_titles[lesson_index].strip():  # Only create lesson if title is not empty
                             # Create lesson
+                            # Get content based on content type
+                            content_type = lesson_content_types[lesson_index] if lesson_index < len(lesson_content_types) else "text"
+                            content = lesson_contents[lesson_index] if lesson_index < len(lesson_contents) else ""
+
+                            # Process quiz data if content type is quiz
+                            if content_type == "quiz":
+                                # Check if content is already valid JSON quiz data
+                                try:
+                                    quiz_data = json.loads(content)
+                                    # Validate that it's quiz data
+                                    if not isinstance(quiz_data, list) or not all(isinstance(q, dict) and "question" in q for q in quiz_data):
+                                        raise ValueError("Invalid quiz data format")
+                                except (json.JSONDecodeError, ValueError):
+                                    # Content is not valid JSON quiz data, so process quiz data from form
+                                    # Get all quiz questions, options, and answers
+                                    all_quiz_questions = form.getlist("quiz_questions[]")
+                                    all_quiz_options = form.getlist("quiz_options[]")
+                                    all_quiz_answers = form.getlist("quiz_answers[]")
+
+                                    # Find the quiz questions for this lesson
+                                    # Since we can't directly associate quiz questions with lessons,
+                                    # we'll use a heuristic: each lesson with quiz content type gets
+                                    # at least one quiz question, in order
+                                    quiz_count = 0
+                                    quiz_data = []
+
+                                    # Count how many quiz lessons we've processed so far
+                                    for j in range(lesson_index):
+                                        if j < len(lesson_content_types) and lesson_content_types[j] == "quiz":
+                                            # Count how many quiz questions this lesson has
+                                            try:
+                                                lesson_content = lesson_contents[j] if j < len(lesson_contents) else ""
+                                                lesson_quiz_data = json.loads(lesson_content)
+                                                if isinstance(lesson_quiz_data, list):
+                                                    quiz_count += len(lesson_quiz_data)
+                                            except (json.JSONDecodeError, ValueError):
+                                                # If we can't parse the content, assume one quiz question
+                                                quiz_count += 1
+
+                                    # Get the remaining quiz questions for this lesson
+                                    remaining_questions = all_quiz_questions[quiz_count:]
+                                    remaining_options = all_quiz_options[quiz_count:]
+                                    remaining_answers = all_quiz_answers[quiz_count:]
+
+                                    # Format quiz data
+                                    for i in range(len(remaining_questions)):
+                                        if i < len(remaining_questions) and remaining_questions[i]:
+                                            options = remaining_options[i].split('\n') if i < len(remaining_options) else []
+                                            answer = remaining_answers[i] if i < len(remaining_answers) else ""
+                                            quiz_data.append({
+                                                "question": remaining_questions[i],
+                                                "options": options,
+                                                "answer": answer
+                                            })
+
+                                    # Convert quiz data to JSON
+                                    content = json.dumps(quiz_data)
+
                             lesson_data = {
                                 "module_id": module.id,
                                 "title": lesson_titles[lesson_index],
                                 "description": lesson_descriptions[lesson_index] if lesson_index < len(lesson_descriptions) else "",
-                                "content_type": lesson_content_types[lesson_index] if lesson_index < len(lesson_content_types) else "text",
-                                "content": lesson_contents[lesson_index] if lesson_index < len(lesson_contents) else "",
+                                "content_type": content_type,
+                                "content": content,
                                 "duration_minutes": int(lesson_durations[lesson_index]) if lesson_index < len(lesson_durations) and lesson_durations[lesson_index] else None,
                                 "is_free_preview": str(lesson_index) in lesson_free_previews,
                                 "order": module_lesson_count + 1

@@ -274,27 +274,35 @@
 </div>
 
 <script>
-    // Show/hide content fields based on selected content type
-    document.getElementById('contentType').addEventListener('change', function() {
+    // Function to show/hide content fields based on selected content type
+    function updateContentFields() {
         // Hide all content fields
         document.querySelectorAll('.content-field').forEach(field => {
             field.style.display = 'none';
         });
-        
+
         // Show the selected content field
-        const contentType = this.value;
+        const contentType = document.getElementById('contentType').value;
+        console.log(contentType);
         if (contentType === 'video') {
             document.getElementById('videoContent').style.display = 'block';
         } else if (contentType === 'text') {
             document.getElementById('textContent').style.display = 'block';
         } else if (contentType === 'quiz') {
+            console.log('quiz');
             document.getElementById('quizContent').style.display = 'block';
         } else if (contentType === 'assignment') {
             document.getElementById('assignmentContent').style.display = 'block';
         } else if (contentType === 'file') {
             document.getElementById('fileContent').style.display = 'block';
         }
-    });
+    }
+
+    // Add event listener for content type change
+    document.getElementById('contentType').addEventListener('change', updateContentFields);
+
+    // Check initial value when page loads
+    document.addEventListener('DOMContentLoaded', updateContentFields);
 
     // Add another quiz question
     document.getElementById('addQuizQuestion').addEventListener('click', function() {
@@ -327,7 +335,7 @@
             </div>
         `;
         quizQuestions.appendChild(newQuestion);
-        
+
         // Add event listener to the remove button
         newQuestion.querySelector('.remove-question').addEventListener('click', function() {
             quizQuestions.removeChild(newQuestion);
@@ -359,7 +367,7 @@
             </div>
         `;
         topicsContainer.appendChild(newTopic);
-        
+
         // Add event listener to the remove button
         newTopic.querySelector('.remove-topic').addEventListener('click', function() {
             topicsContainer.removeChild(newTopic);

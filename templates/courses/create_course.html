@@ -147,7 +147,7 @@
                                                         <label class="label">Content Type</label>
                                                         <div class="control">
                                                             <div class="select is-fullwidth">
-                                                                <select name="lesson_content_types[]">
+                                                                <select name="lesson_content_types[]" class="content-type-select">
                                                                     <option value="video">Video</option>
                                                                     <option value="text">Text</option>
                                                                     <option value="quiz">Quiz</option>
@@ -157,10 +157,41 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="field">
+                                                    <div class="field content-field general-content" id="general-content-{{ loop.index0 }}">
                                                         <label class="label">Content</label>
                                                         <div class="control">
                                                             <textarea class="textarea" name="lesson_contents[]" placeholder="Enter content (URL for videos/files, text content, or JSON for quizzes/assignments)">{{ lesson.content }}</textarea>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="field content-field quiz-content" id="quiz-content-{{ loop.index0 }}" style="display: none;">
+                                                        <label class="label">Quiz Questions</label>
+                                                        <div class="quiz-questions">
+                                                            <div class="box quiz-question">
+                                                                <div class="field">
+                                                                    <label class="label">Question</label>
+                                                                    <div class="control">
+                                                                        <input class="input" type="text" name="quiz_questions[]" placeholder="Enter question">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="field">
+                                                                    <label class="label">Options (one per line)</label>
+                                                                    <div class="control">
+                                                                        <textarea class="textarea" name="quiz_options[]" placeholder="Enter options, one per line"></textarea>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="field">
+                                                                    <label class="label">Correct Answer</label>
+                                                                    <div class="control">
+                                                                        <input class="input" type="text" name="quiz_answers[]" placeholder="Enter correct answer">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="field">
+                                                            <div class="control">
+                                                                <button type="button" class="button is-info is-small add-quiz-question">Add Another Question</button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <div class="field">
@@ -278,6 +309,23 @@
                 <!-- JavaScript for dynamic form fields -->
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
+                        // Initialize event listeners for existing content type selects
+                        document.querySelectorAll('select[name="lesson_content_types[]"]').forEach(select => {
+                            // Check if the current value is 'quiz' and show the quiz content
+                            if (select.value === 'quiz') {
+                                const lessonItem = select.closest('.lesson-item');
+                                lessonItem.querySelector('.general-content').style.display = 'none';
+                                lessonItem.querySelector('.quiz-content').style.display = 'block';
+                            }
+
+                            // Add change event listener
+                            select.addEventListener('change', handleContentTypeChange);
+                        });
+
+                        // Initialize event listeners for existing add quiz question buttons
+                        document.querySelectorAll('.add-quiz-question').forEach(button => {
+                            button.addEventListener('click', addQuizQuestion);
+                        });
                         // Add module button
                         document.querySelector('.add-module').addEventListener('click', function() {
                             const moduleContainer = document.getElementById('modules-container');
@@ -317,7 +365,7 @@
                                                 <label class="label">Content Type</label>
                                                 <div class="control">
                                                     <div class="select is-fullwidth">
-                                                        <select name="lesson_content_types[]">
+                                                        <select name="lesson_content_types[]" class="content-type-select">
                                                             <option value="video">Video</option>
                                                             <option value="text">Text</option>
                                                             <option value="quiz">Quiz</option>
@@ -327,10 +375,40 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="field">
+                                            <div class="field content-field general-content">
                                                 <label class="label">Content</label>
                                                 <div class="control">
                                                     <textarea class="textarea" name="lesson_contents[]" placeholder="Enter content (URL for videos/files, text content, or JSON for quizzes/assignments)"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="field content-field quiz-content" style="display: none;">
+                                                <label class="label">Quiz Questions</label>
+                                                <div class="quiz-questions">
+                                                    <div class="box quiz-question">
+                                                        <div class="field">
+                                                            <label class="label">Question</label>
+                                                            <div class="control">
+                                                                <input class="input" type="text" name="quiz_questions[]" placeholder="Enter question">
+                                                            </div>
+                                                        </div>
+                                                        <div class="field">
+                                                            <label class="label">Options (one per line)</label>
+                                                            <div class="control">
+                                                                <textarea class="textarea" name="quiz_options[]" placeholder="Enter options, one per line"></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="field">
+                                                            <label class="label">Correct Answer</label>
+                                                            <div class="control">
+                                                                <input class="input" type="text" name="quiz_answers[]" placeholder="Enter correct answer">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="field">
+                                                    <div class="control">
+                                                        <button type="button" class="button is-info is-small add-quiz-question">Add Another Question</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="field">
@@ -380,7 +458,7 @@
                                         <label class="label">Content Type</label>
                                         <div class="control">
                                             <div class="select is-fullwidth">
-                                                <select name="lesson_content_types[]">
+                                                <select name="lesson_content_types[]" class="content-type-select">
                                                     <option value="video">Video</option>
                                                     <option value="text">Text</option>
                                                     <option value="quiz">Quiz</option>
@@ -390,10 +468,40 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="field">
+                                    <div class="field content-field general-content">
                                         <label class="label">Content</label>
                                         <div class="control">
                                             <textarea class="textarea" name="lesson_contents[]" placeholder="Enter content (URL for videos/files, text content, or JSON for quizzes/assignments)"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="field content-field quiz-content" style="display: none;">
+                                        <label class="label">Quiz Questions</label>
+                                        <div class="quiz-questions">
+                                            <div class="box quiz-question">
+                                                <div class="field">
+                                                    <label class="label">Question</label>
+                                                    <div class="control">
+                                                        <input class="input" type="text" name="quiz_questions[]" placeholder="Enter question">
+                                                    </div>
+                                                </div>
+                                                <div class="field">
+                                                    <label class="label">Options (one per line)</label>
+                                                    <div class="control">
+                                                        <textarea class="textarea" name="quiz_options[]" placeholder="Enter options, one per line"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="field">
+                                                    <label class="label">Correct Answer</label>
+                                                    <div class="control">
+                                                        <input class="input" type="text" name="quiz_answers[]" placeholder="Enter correct answer">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <div class="control">
+                                                <button type="button" class="button is-info is-small add-quiz-question">Add Another Question</button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="field">
@@ -411,14 +519,91 @@
                                 </div>
                             `;
 
-                            lessonsContainer.insertBefore(
-                                new DOMParser().parseFromString(lessonHtml, 'text/html').body.firstChild,
-                                this
-                            );
+                            const newLesson = new DOMParser().parseFromString(lessonHtml, 'text/html').body.firstChild;
+                            lessonsContainer.insertBefore(newLesson, this);
+
+                            // Add event listeners to the new lesson's content type select
+                            const newContentTypeSelect = newLesson.querySelector('select[name="lesson_content_types[]"]');
+                            newContentTypeSelect.addEventListener('change', handleContentTypeChange);
+
+                            // Add event listener to the new lesson's add quiz question button
+                            const newAddQuizQuestionButton = newLesson.querySelector('.add-quiz-question');
+                            newAddQuizQuestionButton.addEventListener('click', addQuizQuestion);
                         }
 
                         // Add event listener to the initial "Add Lesson" button
                         document.querySelector('.add-lesson').addEventListener('click', addLesson);
+
+                        // Function to handle content type change
+                        function handleContentTypeChange(event) {
+                            const select = event.target;
+                            const lessonItem = select.closest('.lesson-item');
+                            const index = Array.from(lessonItem.parentNode.children).indexOf(lessonItem);
+
+                            // Hide all content fields in this lesson
+                            lessonItem.querySelectorAll('.content-field').forEach(field => {
+                                field.style.display = 'none';
+                            });
+
+                            // Show the appropriate content field based on the selected content type
+                            const contentType = select.value;
+                            if (contentType === 'quiz') {
+                                lessonItem.querySelector('.quiz-content').style.display = 'block';
+                            } else {
+                                lessonItem.querySelector('.general-content').style.display = 'block';
+                            }
+                        }
+
+                        // Add event listeners to all content type selects
+                        document.querySelectorAll('select[name="lesson_content_types[]"]').forEach(select => {
+                            select.addEventListener('change', handleContentTypeChange);
+                        });
+
+                        // Function to add another quiz question
+                        function addQuizQuestion(event) {
+                            const button = event.target;
+                            const quizContent = button.closest('.quiz-content');
+                            const quizQuestions = quizContent.querySelector('.quiz-questions');
+
+                            const newQuestion = document.createElement('div');
+                            newQuestion.className = 'box quiz-question';
+                            newQuestion.innerHTML = `
+                                <div class="field">
+                                    <label class="label">Question</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="quiz_questions[]" placeholder="Enter question">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Options (one per line)</label>
+                                    <div class="control">
+                                        <textarea class="textarea" name="quiz_options[]" placeholder="Enter options, one per line"></textarea>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Correct Answer</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="quiz_answers[]" placeholder="Enter correct answer">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="control">
+                                        <button type="button" class="button is-danger is-small remove-question">Remove Question</button>
+                                    </div>
+                                </div>
+                            `;
+                            quizQuestions.appendChild(newQuestion);
+
+                            // Add event listener to the remove button
+                            newQuestion.querySelector('.remove-question').addEventListener('click', function() {
+                                quizQuestions.removeChild(newQuestion);
+                            });
+                        }
+
+                        // Add event listeners to all add quiz question buttons
+                        document.querySelectorAll('.add-quiz-question').forEach(button => {
+                            button.addEventListener('click', addQuizQuestion);
+                        });
                     });
                 </script>
             </form>
