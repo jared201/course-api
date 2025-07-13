@@ -141,8 +141,32 @@ class ContentService:
         return None
 
     async def delete_module(self, module_id: int) -> bool:
-        """Delete a module."""
-        # In a real implementation, this would delete from a database
+        """Delete a module and all its associated lessons."""
+        from services.redis_manager import RedisManager
+
+        # Initialize Redis manager
+        redis_manager = RedisManager()
+
+        # Get the module to find its course_id
+        module = await self.get_module(module_id)
+        if not module:
+            return False
+
+        # Get all lessons for this module
+        lessons = await self.get_lessons_by_module_id(module_id)
+
+        # Delete all lessons associated with this module
+        for lesson in lessons:
+            await self.delete_lesson(lesson.id)
+
+        # Delete the module from Redis
+        module_key = f"module:{module_id}"
+        redis_manager.delete(module_key)
+
+        # Remove module ID from course's modules set
+        course_modules_key = f"course:{module.course_id}:modules"
+        redis_manager.srem(course_modules_key, module_id)
+
         return True
 
     async def list_course_modules(self, course_id: int) -> List[Module]:
@@ -162,7 +186,7 @@ class ContentService:
         # Sort modules by order
         modules.sort(key=lambda x: x.order)
 
-        return []
+        return modules
 
     async def reorder_modules(self, course_id: int, module_order: List[Dict[str, int]]) -> List[Module]:
         """Reorder modules within a course."""
@@ -242,7 +266,24 @@ class ContentService:
 
     async def delete_lesson(self, lesson_id: int) -> bool:
         """Delete a lesson."""
-        # In a real implementation, this would delete from a database
+        from services.redis_manager import RedisManager
+
+        # Initialize Redis manager
+        redis_manager = RedisManager()
+
+        # Get the lesson to find its module_id
+        lesson = await self.get_lesson(lesson_id)
+        if not lesson:
+            return False
+
+        # Delete the lesson from Redis
+        lesson_key = f"lesson:{lesson_id}"
+        redis_manager.delete(lesson_key)
+
+        # Remove lesson ID from module's lessons set
+        module_lessons_key = f"module:{lesson.module_id}:lessons"
+        redis_manager.srem(module_lessons_key, lesson_id)
+
         return True
 
     async def list_module_lessons(self, module_id: int) -> List[Lesson]:

@@ -46,6 +46,11 @@
                                     {% if lesson.id in completed_lessons %}
                                         <span class="tag is-success">Completed</span>
                                     {% endif %}
+                                    {% if user and (user.role == 'instructor' and user.id == course.instructor_id) or user.role == 'admin' %}
+                                    <button class="button is-small is-danger delete-lesson" data-course-id="{{ course.id }}" data-module-id="{{ module.id }}" data-lesson-id="{{ lesson.id }}">
+                                        Delete Lesson
+                                    </button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </a>

@@ -47,7 +47,7 @@
                     <div class="control">
                         <div class="select is-fullwidth">
                             <select name="level" required>
-                                <option value="" disabled selected>Select level</option>
+                                <option value="" disabled>Select level</option>
                                 <option value="Beginner">Beginner</option>
                                 <option value="Intermediate">Intermediate</option>
                                 <option value="Advanced">Advanced</option>
@@ -79,8 +79,9 @@
                 <div class="field">
                     <label class="label">Duration</label>
                     <div class="control">
-                        <input class="input" type="number" name="duration" min="0" step="1" placeholder="Enter total course hours"
+                        <input class="input" type="number" name="duration" min="0" step="0.1" placeholder="Enter total course hours"
                                value="{% if is_edit %}{{ course.duration }}{% endif %}">
+                    </div>
                 </div>
                 <div class="field">
                     <label class="label">Start Date</label>
@@ -94,7 +95,7 @@
                     <div class="control">
                         <div class="select is-fullwidth">
                             <select name="status" required>
-                                <option value="pending" selected>Pending</option>
+                                <option value="pending">Pending</option>
                                 <option value="draft">Draft</option>
                                 <option value="published">Published</option>
                                 <option value="archived">Archived</option>
@@ -108,72 +109,147 @@
                     <p class="subtitle is-6 mb-4">Add modules and lessons to your course</p>
 
                     <div id="modules-container">
-                        <!-- Initial module -->
-                        <div class="module-item box mb-4">
-                            <div class="field">
-                                <label class="label">Module Title</label>
-                                <div class="control">
-                                    <input class="input" type="text" name="module_titles[]" placeholder="Enter module title">
-                                </div>
-                            </div>
-                            <div class="field">
-                                <label class="label">Module Description</label>
-                                <div class="control">
-                                    <textarea class="textarea" name="module_descriptions[]" placeholder="Enter module description"></textarea>
-                                </div>
-                            </div>
+                        {% if is_edit and modules %}
+                            <!-- Display existing modules and lessons when editing -->
+                            {% for module in modules %}
+                                <div class="module-item box mb-4">
+                                    <div class="field">
+                                        <label class="label">Module Title</label>
+                                        <div class="control">
+                                            <input class="input" type="text" name="module_titles[]" placeholder="Enter module title" value="{{ module.title }}">
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="label">Module Description</label>
+                                        <div class="control">
+                                            <textarea class="textarea" name="module_descriptions[]" placeholder="Enter module description">{{ module.description }}</textarea>
+                                        </div>
+                                    </div>
 
-                            <div class="lessons-container mt-4">
-                                <h5 class="title is-5">Lessons</h5>
-                                <div class="lesson-item box mb-3">
-                                    <div class="field">
-                                        <label class="label">Lesson Title</label>
-                                        <div class="control">
-                                            <input class="input" type="text" name="lesson_titles[]" placeholder="Enter lesson title">
-                                        </div>
+                                    <div class="lessons-container mt-4">
+                                        <h5 class="title is-5">Lessons</h5>
+                                        {% if module.lessons %}
+                                            {% for lesson in module.lessons %}
+                                                <div class="lesson-item box mb-3">
+                                                    <div class="field">
+                                                        <label class="label">Lesson Title</label>
+                                                        <div class="control">
+                                                            <input class="input" type="text" name="lesson_titles[]" placeholder="Enter lesson title" value="{{ lesson.title }}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="field">
+                                                        <label class="label">Lesson Description</label>
+                                                        <div class="control">
+                                                            <textarea class="textarea" name="lesson_descriptions[]" placeholder="Enter lesson description">{{ lesson.content }}</textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="field">
+                                                        <label class="label">Content Type</label>
+                                                        <div class="control">
+                                                            <div class="select is-fullwidth">
+                                                                <select name="lesson_content_types[]">
+                                                                    <option value="video">Video</option>
+                                                                    <option value="text">Text</option>
+                                                                    <option value="quiz">Quiz</option>
+                                                                    <option value="assignment">Assignment</option>
+                                                                    <option value="file">File</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="field">
+                                                        <label class="label">Content</label>
+                                                        <div class="control">
+                                                            <textarea class="textarea" name="lesson_contents[]" placeholder="Enter content (URL for videos/files, text content, or JSON for quizzes/assignments)">{{ lesson.content }}</textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="field">
+                                                        <label class="label">Duration (minutes)</label>
+                                                        <div class="control">
+                                                            <input class="input" type="number" name="lesson_durations[]" min="0" placeholder="Enter duration in minutes" value="{{ lesson.duration_minutes }}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="field">
+                                                        <label class="checkbox">
+                                                            <input type="checkbox" name="lesson_free_previews[]" value="{{ loop.index0 }}">
+                                                            Free Preview
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        <button type="button" class="button is-info is-small add-lesson">Add Lesson</button>
                                     </div>
-                                    <div class="field">
-                                        <label class="label">Lesson Description</label>
-                                        <div class="control">
-                                            <textarea class="textarea" name="lesson_descriptions[]" placeholder="Enter lesson description"></textarea>
-                                        </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Initial module for new course -->
+                            <div class="module-item box mb-4">
+                                <div class="field">
+                                    <label class="label">Module Title</label>
+                                    <div class="control">
+                                        <input class="input" type="text" name="module_titles[]" placeholder="Enter module title">
                                     </div>
-                                    <div class="field">
-                                        <label class="label">Content Type</label>
-                                        <div class="control">
-                                            <div class="select is-fullwidth">
-                                                <select name="lesson_content_types[]">
-                                                    <option value="video">Video</option>
-                                                    <option value="text">Text</option>
-                                                    <option value="quiz">Quiz</option>
-                                                    <option value="assignment">Assignment</option>
-                                                    <option value="file">File</option>
-                                                </select>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Module Description</label>
+                                    <div class="control">
+                                        <textarea class="textarea" name="module_descriptions[]" placeholder="Enter module description"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="lessons-container mt-4">
+                                    <h5 class="title is-5">Lessons</h5>
+                                    <div class="lesson-item box mb-3">
+                                        <div class="field">
+                                            <label class="label">Lesson Title</label>
+                                            <div class="control">
+                                                <input class="input" type="text" name="lesson_titles[]" placeholder="Enter lesson title">
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="field">
-                                        <label class="label">Content</label>
-                                        <div class="control">
-                                            <textarea class="textarea" name="lesson_contents[]" placeholder="Enter content (URL for videos/files, text content, or JSON for quizzes/assignments)"></textarea>
+                                        <div class="field">
+                                            <label class="label">Lesson Description</label>
+                                            <div class="control">
+                                                <textarea class="textarea" name="lesson_descriptions[]" placeholder="Enter lesson description"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="label">Content Type</label>
+                                            <div class="control">
+                                                <div class="select is-fullwidth">
+                                                    <select name="lesson_content_types[]">
+                                                        <option value="video">Video</option>
+                                                        <option value="text">Text</option>
+                                                        <option value="quiz">Quiz</option>
+                                                        <option value="assignment">Assignment</option>
+                                                        <option value="file">File</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="label">Content</label>
+                                            <div class="control">
+                                                <textarea class="textarea" name="lesson_contents[]" placeholder="Enter content (URL for videos/files, text content, or JSON for quizzes/assignments)"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="label">Duration (minutes)</label>
+                                            <div class="control">
+                                                <input class="input" type="number" name="lesson_durations[]" min="0" placeholder="Enter duration in minutes">
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="checkbox">
+                                                <input type="checkbox" name="lesson_free_previews[]" value="0">
+                                                Free Preview
+                                            </label>
                                         </div>
                                     </div>
-                                    <div class="field">
-                                        <label class="label">Duration (minutes)</label>
-                                        <div class="control">
-                                            <input class="input" type="number" name="lesson_durations[]" min="0" placeholder="Enter duration in minutes">
-                                        </div>
-                                    </div>
-                                    <div class="field">
-                                        <label class="checkbox">
-                                            <input type="checkbox" name="lesson_free_previews[]" value="1">
-                                            Free Preview
-                                        </label>
-                                    </div>
+                                    <button type="button" class="button is-info is-small add-lesson">Add Lesson</button>
                                 </div>
-                                <button type="button" class="button is-info is-small add-lesson">Add Lesson</button>
                             </div>
-                        </div>
+                        {% endif %}
                     </div>
 
                     <div class="field mt-3">

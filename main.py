@@ -32,6 +32,16 @@ redis_manager = RedisManager()
 # Add datetime.now function to templates
 from datetime import datetime
 
+# Add custom filters to Jinja2 environment
+import json
+def from_json(value):
+    try:
+        return json.loads(value)
+    except (ValueError, TypeError):
+        return {}
+
+templates.env.filters["from_json"] = from_json
+
 # Sample data for featured courses
 featured_courses = [
     {
@@ -668,6 +678,116 @@ async def get_lesson_ui(request: Request, response: Response, course_id: int, mo
         "trending_courses": trending_courses,
         "user": user
     })
+
+@app.delete("/courses/{course_id}/modules/{module_id}")
+async def delete_module(request: Request, course_id: int, module_id: int):
+    """Delete a module and all its associated lessons."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request)
+        # Check if user is an instructor or admin
+        if user.role not in [UserRole.INSTRUCTOR, UserRole.ADMIN]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only instructors and admins can delete modules",
+            )
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    # Check if course exists
+    course = await course_service.get_course(course_id)
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    # Check if user is the course instructor or an admin
+    if user.role != UserRole.ADMIN and user.id != course.instructor_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the course instructor or admin can delete modules",
+        )
+
+    # Check if module exists
+    module = await content_service.get_module(module_id)
+    if module is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Module not found",
+        )
+
+    # Delete the module
+    success = await content_service.delete_module(module_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete module",
+        )
+
+    return {"message": "Module deleted successfully"}
+
+@app.delete("/courses/{course_id}/modules/{module_id}/lessons/{lesson_id}")
+async def delete_lesson(request: Request, course_id: int, module_id: int, lesson_id: int):
+    """Delete a lesson."""
+    # Try to get the current user from cookie
+    try:
+        user = await get_current_user_from_cookie(request)
+        # Check if user is an instructor or admin
+        if user.role not in [UserRole.INSTRUCTOR, UserRole.ADMIN]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only instructors and admins can delete lessons",
+            )
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    # Check if course exists
+    course = await course_service.get_course(course_id)
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    # Check if user is the course instructor or an admin
+    if user.role != UserRole.ADMIN and user.id != course.instructor_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the course instructor or admin can delete lessons",
+        )
+
+    # Check if module exists
+    module = await content_service.get_module(module_id)
+    if module is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Module not found",
+        )
+
+    # Check if lesson exists
+    lesson = await content_service.get_lesson(lesson_id)
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found",
+        )
+
+    # Delete the lesson
+    success = await content_service.delete_lesson(lesson_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete lesson",
+        )
+
+    return {"message": "Lesson deleted successfully"}
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_ui(request: Request, response: Response):
@@ -1470,13 +1590,29 @@ async def edit_course_form(course_id: int, request: Request, response: Response)
         if course.instructor_id != user.id:
             raise HTTPException(status_code=403, detail="You are not authorized to edit this course")
 
+        # Get modules and lessons for the course
+        modules = await content_service.get_modules_by_course_id(course_id)
+
+        # Convert modules to dicts
+        modules_dict = []
+        if modules:
+            modules_dict = [module.dict() for module in modules]
+            # Get lessons for each module
+            for module in modules_dict:
+                lessons = await content_service.get_lessons_by_module_id(module["id"])
+                if lessons:
+                    module["lessons"] = [lesson.dict() for lesson in lessons]
+                else:
+                    module["lessons"] = []
+
         return templates.TemplateResponse("courses/create_course.html", {
             "request": request,
             "user": user,
             "featured_courses": [],
             "trending_courses": [],
             "is_edit": True,
-            "course": course
+            "course": course,
+            "modules": modules_dict
         })
     except HTTPException as e:
         if e.status_code == 404:
@@ -1503,7 +1639,7 @@ async def create_course_submit(
     start_date: Optional[str] = Form(None),
     status: str = Form("pending"),
     course_id: Optional[int] = Form(None),
-    duration: Optional[int] = Form(None),
+    duration: Optional[float] = Form(None),
     is_free: bool = Form(False),
 
 ):
@@ -1583,51 +1719,56 @@ async def create_course_submit(
         # Initialize content service
         content_service = ContentService()
 
-        # Track current lesson index
-        lesson_index = 0
+        # If this is an update and no module data was submitted, preserve existing modules and lessons
+        if course_id and not module_titles:
+            print(f"No module data submitted for course {course_id}, preserving existing modules and lessons")
+            # No need to do anything, as the existing modules and lessons are already in the database
+        else:
+            # Track current lesson index
+            lesson_index = 0
 
-        # Create modules and their lessons
-        module_ids = []
-        for i in range(len(module_titles)):
-            if module_titles[i].strip():  # Only create module if title is not empty
-                # Create module
-                module_data = {
-                    "course_id": course.id,
-                    "title": module_titles[i],
-                    "description": module_descriptions[i] if i < len(module_descriptions) else "",
-                    "order": i + 1
-                }
-                print(f"Creating module: {module_data}")
-                module = await content_service.create_module(module_data)
-                module_ids.append(module.id)
-                module_lesson_count = 0
+            # Create modules and their lessons
+            module_ids = []
+            for i in range(len(module_titles)):
+                if module_titles[i].strip():  # Only create module if title is not empty
+                    # Create module
+                    module_data = {
+                        "course_id": course.id,
+                        "title": module_titles[i],
+                        "description": module_descriptions[i] if i < len(module_descriptions) else "",
+                        "order": i + 1
+                    }
+                    print(f"Creating module: {module_data}")
+                    module = await content_service.create_module(module_data)
+                    module_ids.append(module.id)
+                    module_lesson_count = 0
 
-                # Find lessons for this module
-                while lesson_index < len(lesson_titles):
-                    if lesson_titles[lesson_index].strip():  # Only create lesson if title is not empty
-                        # Create lesson
-                        lesson_data = {
-                            "module_id": module.id,
-                            "title": lesson_titles[lesson_index],
-                            "description": lesson_descriptions[lesson_index] if lesson_index < len(lesson_descriptions) else "",
-                            "content_type": lesson_content_types[lesson_index] if lesson_index < len(lesson_content_types) else "text",
-                            "content": lesson_contents[lesson_index] if lesson_index < len(lesson_contents) else "",
-                            "duration_minutes": int(lesson_durations[lesson_index]) if lesson_index < len(lesson_durations) and lesson_durations[lesson_index] else None,
-                            "is_free_preview": str(lesson_index) in lesson_free_previews,
-                            "order": module_lesson_count + 1
-                        }
-                        await content_service.create_lesson(lesson_data)
-                        module_lesson_count += 1
+                    # Find lessons for this module
+                    while lesson_index < len(lesson_titles):
+                        if lesson_titles[lesson_index].strip():  # Only create lesson if title is not empty
+                            # Create lesson
+                            lesson_data = {
+                                "module_id": module.id,
+                                "title": lesson_titles[lesson_index],
+                                "description": lesson_descriptions[lesson_index] if lesson_index < len(lesson_descriptions) else "",
+                                "content_type": lesson_content_types[lesson_index] if lesson_index < len(lesson_content_types) else "text",
+                                "content": lesson_contents[lesson_index] if lesson_index < len(lesson_contents) else "",
+                                "duration_minutes": int(lesson_durations[lesson_index]) if lesson_index < len(lesson_durations) and lesson_durations[lesson_index] else None,
+                                "is_free_preview": str(lesson_index) in lesson_free_previews,
+                                "order": module_lesson_count + 1
+                            }
+                            await content_service.create_lesson(lesson_data)
+                            module_lesson_count += 1
 
-                    lesson_index += 1
+                        lesson_index += 1
 
-                    # If we've reached the end of this module's lessons or processed at least one lesson
-                    # and there are more modules to process, break to the next module
-                    if (module_lesson_count > 0 and i < len(module_titles) - 1 and 
-                        lesson_index < len(lesson_titles) - 1 and 
-                        lesson_titles[lesson_index + 1].strip() and
-                        module_titles[i + 1].strip()):
-                        break
+                        # If we've reached the end of this module's lessons or processed at least one lesson
+                        # and there are more modules to process, break to the next module
+                        if (module_lesson_count > 0 and i < len(module_titles) - 1 and 
+                            lesson_index < len(lesson_titles) - 1 and 
+                            lesson_titles[lesson_index + 1].strip() and
+                            module_titles[i + 1].strip()):
+                            break
 
         # Redirect to my-lessons page
         return RedirectResponse(url="/my-lessons", status_code=303)
